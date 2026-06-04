@@ -1,15 +1,6 @@
 import { useApp } from '../state/AppContext';
 import type { VoiceSessionStatus } from '../types';
-import {
-  Wifi,
-  WifiOff,
-  AlertTriangle,
-  Loader2,
-  Mic,
-  MicOff,
-  AlertOctagon,
-  ArrowDownToLine,
-} from 'lucide-react';
+import { Wifi, WifiOff, TriangleAlert as AlertTriangle, Loader as Loader2, Mic, MicOff, OctagonAlert as AlertOctagon, ArrowDownToLine } from 'lucide-react';
 import { useEffect, useRef } from 'react';
 
 const STATUS_CONFIG: Record<VoiceSessionStatus, { label: string; color: string; bg: string; icon: React.ElementType }> = {

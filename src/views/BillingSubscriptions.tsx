@@ -1,15 +1,7 @@
 import { useState } from 'react';
 import { useApp } from '../state/AppContext';
 import type { BillingPlan, SubscriptionTier } from '../types';
-import {
-  Check,
-  X,
-  Crown,
-  Zap,
-  Code2,
-  CreditCard,
-  Shield,
-} from 'lucide-react';
+import { Check, X, Crown, Zap, Code as Code2, CreditCard, Shield } from 'lucide-react';
 
 const PLANS: BillingPlan[] = [
   {

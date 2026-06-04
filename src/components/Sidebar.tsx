@@ -1,14 +1,6 @@
 import { useApp } from '../state/AppContext';
 import type { AppView } from '../types';
-import {
-  Radio,
-  Code2,
-  BarChart3,
-  CreditCard,
-  LogOut,
-  ChevronDown,
-  Building2,
-} from 'lucide-react';
+import { Radio, Code as Code2, ChartBar as BarChart3, CreditCard, LogOut, ChevronDown, Building2 } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 
 const NAV_ITEMS: { view: AppView; label: string; icon: React.ElementType }[] = [
