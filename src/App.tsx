@@ -1,5 +1,7 @@
 import { AppProvider, useApp } from './state/AppContext';
 import AuthGuard from './components/AuthGuard';
+import ErrorBoundary from './components/ErrorBoundary';
+import ToastContainer from './components/ToastContainer';
 import Sidebar from './components/Sidebar';
 import AgentConsole from './views/AgentConsole';
 import DeveloperPortal from './views/DeveloperPortal';
@@ -44,14 +46,17 @@ function AppContent() {
           </main>
         </div>
       </div>
+      <ToastContainer />
     </AuthGuard>
   );
 }
 
 export default function App() {
   return (
-    <AppProvider>
-      <AppContent />
-    </AppProvider>
+    <ErrorBoundary>
+      <AppProvider>
+        <AppContent />
+      </AppProvider>
+    </ErrorBoundary>
   );
 }

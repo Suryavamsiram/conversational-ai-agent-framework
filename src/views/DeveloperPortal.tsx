@@ -12,16 +12,19 @@ import {
   Eye,
 } from 'lucide-react';
 
-function GenerateKeyModal({ onClose, onGenerate }: { onClose: () => void; onGenerate: (name: string, scope: 'full' | 'read' | 'write') => ApiKey }) {
+function GenerateKeyModal({ onClose, onGenerate }: { onClose: () => void; onGenerate: (name: string, scope: 'full' | 'read' | 'write') => Promise<ApiKey> }) {
   const [keyName, setKeyName] = useState('');
   const [scope, setScope] = useState<'full' | 'read' | 'write'>('full');
   const [generated, setGenerated] = useState<ApiKey | null>(null);
   const [copied, setCopied] = useState(false);
+  const [generating, setGenerating] = useState(false);
 
-  const handleGenerate = () => {
+  const handleGenerate = async () => {
     if (!keyName.trim()) return;
-    const key = onGenerate(keyName, scope);
+    setGenerating(true);
+    const key = await onGenerate(keyName, scope);
     setGenerated(key);
+    setGenerating(false);
   };
 
   const handleCopy = () => {
@@ -74,10 +77,10 @@ function GenerateKeyModal({ onClose, onGenerate }: { onClose: () => void; onGene
             </div>
             <button
               onClick={handleGenerate}
-              disabled={!keyName.trim()}
+              disabled={!keyName.trim() || generating}
               className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-all text-sm"
             >
-              Generate Key
+              {generating ? 'Generating...' : 'Generate Key'}
             </button>
           </div>
         ) : (
@@ -216,7 +219,7 @@ export default function DeveloperPortal() {
                     </td>
                     <td className="px-5 py-3 text-right">
                       <button
-                        onClick={() => revokeApiKey(key.id)}
+                        onClick={() => revokeApiKey(key.id, key.name)}
                         className="text-slate-600 hover:text-red-400 transition-colors p-1"
                       >
                         <Trash2 className="w-4 h-4" />

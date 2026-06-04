@@ -1,20 +1,42 @@
 import { useState } from 'react';
 import { useApp } from '../state/AppContext';
-import { Radio, Shield, ArrowRight, UserPlus } from 'lucide-react';
+import { Radio, Shield, ArrowRight, UserPlus, Loader2 } from 'lucide-react';
 
 export default function AuthGuard({ children }: { children: React.ReactNode }) {
-  const { auth, signIn, signUp } = useApp();
+  const { auth, authLoading, signIn, signUp } = useApp();
   const [mode, setMode] = useState<'signin' | 'signup'>('signin');
-  const [email, setEmail] = useState('kai.chen@swarmvoice.ai');
-  const [password, setPassword] = useState('password123');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [name, setName] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-950">
+        <Loader2 className="w-6 h-6 text-emerald-400 animate-spin" />
+      </div>
+    );
+  }
 
   if (auth.isAuthenticated) return <>{children}</>;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (mode === 'signin') signIn(email, password);
-    else signUp(name, email, password);
+    setError(null);
+    setLoading(true);
+    try {
+      if (mode === 'signin') {
+        await signIn(email, password);
+      } else {
+        await signUp(name, email, password);
+      }
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Authentication failed';
+      setError(message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -42,7 +64,7 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
           {/* Tab Switcher */}
           <div className="flex mb-8 bg-slate-800/50 rounded-lg p-1">
             <button
-              onClick={() => setMode('signin')}
+              onClick={() => { setMode('signin'); setError(null); }}
               className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all duration-200 ${
                 mode === 'signin'
                   ? 'bg-slate-700 text-slate-100 shadow-sm'
@@ -52,7 +74,7 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
               Sign In
             </button>
             <button
-              onClick={() => setMode('signup')}
+              onClick={() => { setMode('signup'); setError(null); }}
               className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all duration-200 ${
                 mode === 'signup'
                   ? 'bg-slate-700 text-slate-100 shadow-sm'
@@ -62,6 +84,12 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
               Sign Up
             </button>
           </div>
+
+          {error && (
+            <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-sm text-red-400">
+              {error}
+            </div>
+          )}
 
           <form onSubmit={handleSubmit} className="space-y-5">
             {mode === 'signup' && (
@@ -104,16 +132,23 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
             </div>
             <button
               type="submit"
-              className="w-full flex items-center justify-center gap-2 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-medium rounded-lg transition-all duration-200 text-sm shadow-lg shadow-emerald-600/20"
+              disabled={loading}
+              className="w-full flex items-center justify-center gap-2 py-2.5 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-all duration-200 text-sm shadow-lg shadow-emerald-600/20"
             >
-              {mode === 'signin' ? 'Sign In' : 'Create Account'}
-              <ArrowRight className="w-4 h-4" />
+              {loading ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <>
+                  {mode === 'signin' ? 'Sign In' : 'Create Account'}
+                  <ArrowRight className="w-4 h-4" />
+                </>
+              )}
             </button>
           </form>
 
           <div className="mt-6 pt-6 border-t border-slate-700/50">
             <p className="text-xs text-slate-500 text-center">
-              Demo mode: any credentials will authenticate
+              Powered by Supabase Auth
             </p>
           </div>
         </div>

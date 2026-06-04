@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
+import { supabase } from '../lib/supabase';
 import type {
   AuthState,
   OrgConfig,
@@ -11,19 +12,6 @@ import type {
   TelemetryMetrics,
   AppView,
 } from '../types';
-
-const MOCK_ORGS: OrgConfig[] = [
-  { id: 'org-ent-001', name: 'Enterprise Voice Agent', tier: 'enterprise', memberCount: 24 },
-  { id: 'org-scale-002', name: 'Scale Operations Inc.', tier: 'scale', memberCount: 8 },
-  { id: 'org-dev-003', name: 'Dev Sandbox', tier: 'developer', memberCount: 1 },
-];
-
-const MOCK_USER: User = {
-  id: 'usr-a7f3c9e1',
-  email: 'kai.chen@swarmvoice.ai',
-  name: 'Kai Chen',
-  role: 'Admin',
-};
 
 function generateId(): string {
   return Math.random().toString(36).substring(2, 11);
@@ -72,13 +60,33 @@ const AGENT_TRANSCRIPTS = [
   "Today's throughput metrics: 2.4M requests processed, 99.97% success rate, average response time 89ms. Peak load was at 09:30 UTC at 38,000 RPS.",
 ];
 
+const DEFAULT_TELEMETRY: TelemetryMetrics = {
+  p50LatencyMs: 1180,
+  audioThroughputKbps: 384,
+  tokenGenSpeedTps: 75,
+  failoverProPrimaryPercent: 94,
+  failoverFlashPercent: 6,
+  latencyHistory: [1320, 1280, 1150, 1190, 1240, 1080, 1180, 1120, 1050, 1180],
+  throughputHistory: [372, 380, 384, 376, 388, 384, 392, 384, 380, 384],
+  tokenHistory: [68, 72, 75, 78, 71, 75, 80, 75, 73, 75],
+};
+
+export type ToastType = 'success' | 'error' | 'info';
+
+export interface Toast {
+  id: string;
+  message: string;
+  type: ToastType;
+}
+
 export function useAppState() {
   const [auth, setAuth] = useState<AuthState>({
     isAuthenticated: false,
     user: null,
     currentOrg: null,
-    availableOrgs: MOCK_ORGS,
+    availableOrgs: [],
   });
+  const [authLoading, setAuthLoading] = useState(true);
 
   const [activeView, setActiveView] = useState<AppView>('console');
 
@@ -89,64 +97,224 @@ export function useAppState() {
     logs: [],
   });
 
-  const [apiKeys, setApiKeys] = useState<ApiKey[]>([
-    { id: 'key-1', name: 'Production API', key: 'sk_live_7a9fb3c2d4e1f0a8b6d5', createdAt: '2026-05-15T10:00:00Z', scope: 'full', status: 'active' },
-    { id: 'key-2', name: 'Staging Read-Only', key: 'sk_live_2e8d4a1c7b3f9e0d5a6c', createdAt: '2026-05-20T14:30:00Z', scope: 'read', status: 'active' },
-    { id: 'key-3', name: 'CI/CD Pipeline', key: 'sk_live_9c1e5b3a7d2f8a0e4b6c', createdAt: '2026-05-28T09:15:00Z', scope: 'write', status: 'active' },
-  ]);
-
-  const [telemetry, setTelemetry] = useState<TelemetryMetrics>({
-    p50LatencyMs: 1180,
-    audioThroughputKbps: 384,
-    tokenGenSpeedTps: 75,
-    failoverProPrimaryPercent: 94,
-    failoverFlashPercent: 6,
-    latencyHistory: [1320, 1280, 1150, 1190, 1240, 1080, 1180, 1120, 1050, 1180],
-    throughputHistory: [372, 380, 384, 376, 388, 384, 392, 384, 380, 384],
-    tokenHistory: [68, 72, 75, 78, 71, 75, 80, 75, 73, 75],
-  });
+  const [apiKeys, setApiKeys] = useState<ApiKey[]>([]);
+  const [telemetry, setTelemetry] = useState<TelemetryMetrics>(DEFAULT_TELEMETRY);
+  const [toasts, setToasts] = useState<Toast[]>([]);
 
   const wsIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const telemetryTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const transcriptIdxRef = useRef(0);
+  const wsLockRef = useRef(false);
 
-  const signIn = useCallback((email: string, _password: string) => {
-    const user: User = { ...MOCK_USER, email };
-    setAuth({
-      isAuthenticated: true,
-      user,
-      currentOrg: MOCK_ORGS[0],
-      availableOrgs: MOCK_ORGS,
-    });
+  // Toast helpers
+  const addToast = useCallback((message: string, type: ToastType = 'info') => {
+    const id = generateId();
+    setToasts(prev => [...prev, { id, message, type }]);
+    setTimeout(() => {
+      setToasts(prev => prev.filter(t => t.id !== id));
+    }, 4000);
   }, []);
 
-  const signUp = useCallback((name: string, email: string, _password: string) => {
-    const user: User = { ...MOCK_USER, name, email };
-    setAuth({
-      isAuthenticated: true,
-      user,
-      currentOrg: MOCK_ORGS[0],
-      availableOrgs: MOCK_ORGS,
-    });
+  // Load user data from Supabase after auth
+  const loadUserData = useCallback(async (userId: string) => {
+    try {
+      const { data: profile, error: profileErr } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', userId)
+        .maybeSingle();
+
+      if (profileErr) {
+        console.error('Failed to load user profile:', profileErr.message);
+        return;
+      }
+      if (!profile) return;
+
+      const user: User = {
+        id: profile.id,
+        email: profile.email,
+        name: profile.name,
+        role: profile.role,
+      };
+
+      // Fetch all orgs this user can see (peers in their org)
+      const { data: orgRows, error: orgsErr } = await supabase
+        .from('users')
+        .select('org_id, organizations!users_org_id_fkey(id, name, tier, member_count)')
+        .eq('id', userId);
+
+      if (orgsErr) {
+        console.error('Failed to load organizations:', orgsErr.message);
+      }
+
+      const availableOrgs: OrgConfig[] = (orgRows || []).map((row: Record<string, unknown>) => {
+        const org = row.organizations as Record<string, unknown>;
+        return {
+          id: org.id as string,
+          name: org.name as string,
+          tier: org.tier as 'developer' | 'scale' | 'enterprise',
+          memberCount: org.member_count as number,
+        };
+      });
+
+      const currentOrg = availableOrgs.find(o => o.id === profile.org_id) || availableOrgs[0] || null;
+
+      setAuth({
+        isAuthenticated: true,
+        user,
+        currentOrg,
+        availableOrgs,
+      });
+
+      // Load API keys for current org
+      if (currentOrg) {
+        const { data: keys, error: keysErr } = await supabase
+          .from('api_keys')
+          .select('*')
+          .eq('org_id', currentOrg.id)
+          .eq('status', 'active');
+
+        if (keysErr) {
+          console.error('Failed to load API keys:', keysErr.message);
+        } else if (keys) {
+          setApiKeys(keys.map((k: Record<string, unknown>) => ({
+            id: k.id as string,
+            name: k.name as string,
+            key: k.key_hash as string,
+            createdAt: k.created_at as string,
+            scope: k.scope as 'full' | 'read' | 'write',
+            status: k.status as 'active' | 'revoked',
+          })));
+        }
+
+        // Load recent telemetry
+        const { data: telRows, error: telErr } = await supabase
+          .from('telemetry_snapshots')
+          .select('*')
+          .eq('org_id', currentOrg.id)
+          .order('created_at', { ascending: false })
+          .limit(10);
+
+        if (telErr) {
+          console.error('Failed to load telemetry:', telErr.message);
+        } else if (telRows && telRows.length > 0) {
+          const latest = telRows[0];
+          const reversed = [...telRows].reverse();
+          setTelemetry({
+            p50LatencyMs: latest.p50_latency_ms,
+            audioThroughputKbps: latest.audio_throughput_kbps,
+            tokenGenSpeedTps: latest.token_gen_speed_tps,
+            failoverProPrimaryPercent: latest.failover_pro_pct,
+            failoverFlashPercent: latest.failover_flash_pct,
+            latencyHistory: reversed.map((t: Record<string, number>) => t.p50_latency_ms),
+            throughputHistory: reversed.map((t: Record<string, number>) => t.audio_throughput_kbps),
+            tokenHistory: reversed.map((t: Record<string, number>) => t.token_gen_speed_tps),
+          });
+        }
+      }
+    } catch (err) {
+      console.error('loadUserData failed:', err);
+    }
   }, []);
 
-  const signOut = useCallback(() => {
-    if (wsIntervalRef.current) clearInterval(wsIntervalRef.current);
-    wsIntervalRef.current = null;
-    setAuth({
-      isAuthenticated: false,
-      user: null,
-      currentOrg: null,
-      availableOrgs: MOCK_ORGS,
+  // Auth state listener
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, sbSession) => {
+      (async () => {
+        if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && sbSession?.user) {
+          await loadUserData(sbSession.user.id);
+        } else if (event === 'SIGNED_OUT') {
+          setAuth({ isAuthenticated: false, user: null, currentOrg: null, availableOrgs: [] });
+          setApiKeys([]);
+          setTelemetry(DEFAULT_TELEMETRY);
+        }
+      })();
     });
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        loadUserData(session.user.id);
+      }
+      setAuthLoading(false);
+    });
+
+    return () => subscription.unsubscribe();
+  }, [loadUserData]);
+
+  // Auth actions
+  const signIn = useCallback(async (email: string, password: string) => {
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) throw error;
+  }, []);
+
+  const signUp = useCallback(async (name: string, email: string, password: string) => {
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: { name },
+      },
+    });
+    if (error) throw error;
+    // The database trigger (handle_new_user) auto-creates profile + org
+    // If the trigger didn't fire (edge case), create manually as fallback
+    if (data.user && !data.session) {
+      addToast('Check your email to confirm your account, then sign in.', 'info');
+    } else if (data.user && data.session) {
+      // Wait for the trigger to create the profile before loading
+      await new Promise(r => setTimeout(r, 1000));
+      await loadUserData(data.user.id);
+    }
+  }, [addToast, loadUserData]);
+
+  const signOut = useCallback(async () => {
+    // Clean up intervals
+    if (wsIntervalRef.current) { clearInterval(wsIntervalRef.current); wsIntervalRef.current = null; }
+    if (telemetryTimerRef.current) { clearInterval(telemetryTimerRef.current); telemetryTimerRef.current = null; }
+    wsLockRef.current = false;
     setSession(prev => ({ ...prev, status: 'disconnected', transcripts: [], logs: [] }));
     setActiveView('console');
-  }, []);
+    const { error } = await supabase.auth.signOut();
+    if (error) addToast('Failed to sign out: ' + error.message, 'error');
+  }, [addToast]);
 
-  const switchOrg = useCallback((orgId: string) => {
+  const switchOrg = useCallback(async (orgId: string) => {
     const org = auth.availableOrgs.find(o => o.id === orgId);
-    if (org) setAuth(prev => ({ ...prev, currentOrg: org }));
-  }, [auth.availableOrgs]);
+    if (!org) return;
 
+    if (auth.user) {
+      const { error } = await supabase.from('users').update({ org_id: orgId }).eq('id', auth.user.id);
+      if (error) {
+        addToast('Failed to switch organization: ' + error.message, 'error');
+        return;
+      }
+    }
+
+    setAuth(prev => ({ ...prev, currentOrg: org }));
+
+    const { data: keys, error: keysErr } = await supabase
+      .from('api_keys')
+      .select('*')
+      .eq('org_id', orgId)
+      .eq('status', 'active');
+
+    if (keysErr) {
+      addToast('Failed to load API keys for organization', 'error');
+    } else {
+      setApiKeys(keys?.map((k: Record<string, unknown>) => ({
+        id: k.id as string,
+        name: k.name as string,
+        key: k.key_hash as string,
+        createdAt: k.created_at as string,
+        scope: k.scope as 'full' | 'read' | 'write',
+        status: k.status as 'active' | 'revoked',
+      })) || []);
+    }
+
+    addToast(`Switched to ${org.name}`, 'success');
+  }, [auth.availableOrgs, auth.user, addToast]);
+
+  // Voice session actions
   const connectSession = useCallback(() => {
     setSession(prev => ({ ...prev, status: 'connecting' }));
     setTimeout(() => {
@@ -155,8 +323,8 @@ export function useAppState() {
   }, []);
 
   const disconnectSession = useCallback(() => {
-    if (wsIntervalRef.current) clearInterval(wsIntervalRef.current);
-    wsIntervalRef.current = null;
+    if (wsIntervalRef.current) { clearInterval(wsIntervalRef.current); wsIntervalRef.current = null; }
+    wsLockRef.current = false;
     setSession(prev => ({ ...prev, status: 'disconnected' }));
   }, []);
 
@@ -166,68 +334,124 @@ export function useAppState() {
       status: 'interrupted',
       logs: [
         ...prev.logs,
-        {
-          id: generateId(),
-          timestamp: new Date().toISOString(),
-          direction: 'outbound',
-          event: 'MANUAL_INTERRUPT',
-          payload: '{"action":"QUEUE_FLUSH","source":"user_button"}',
-        },
-        {
-          id: generateId(),
-          timestamp: new Date().toISOString(),
-          direction: 'inbound',
-          event: 'QUEUE_FLUSHED',
-          payload: '{"reason":"user_interrupt","bufferCleared":true}',
-        },
+        { id: generateId(), timestamp: new Date().toISOString(), direction: 'outbound', event: 'MANUAL_INTERRUPT', payload: '{"action":"QUEUE_FLUSH","source":"user_button"}' },
+        { id: generateId(), timestamp: new Date().toISOString(), direction: 'inbound', event: 'QUEUE_FLUSHED', payload: '{"reason":"user_interrupt","bufferCleared":true}' },
       ],
     }));
     setTimeout(() => {
       setSession(prev => ({
         ...prev,
         status: 'active',
-        transcripts: [
-          ...prev.transcripts,
-          {
-            id: generateId(),
-            timestamp: new Date().toISOString(),
-            role: 'agent',
-            text: '[SYSTEM]: Queue Flushed via User Interruption',
-          },
-        ],
+        transcripts: [...prev.transcripts, { id: generateId(), timestamp: new Date().toISOString(), role: 'agent', text: '[SYSTEM]: Queue Flushed via User Interruption' }],
       }));
     }, 400);
   }, []);
 
   const switchBackend = useCallback((backend: ProcessingBackend) => {
     setSession(prev => ({ ...prev, backend }));
-  }, []);
+    addToast(`Switched to ${backend === 'gemini-3.1-pro-preview' ? 'Gemini 3.1 Pro Preview' : 'Gemini 2.5 Flash Fallback'}`, 'info');
+  }, [addToast]);
 
-  const generateApiKey = useCallback((name: string, scope: 'full' | 'read' | 'write') => {
+  // API key actions with proper rollback on failure
+  const generateApiKey = useCallback(async (name: string, scope: 'full' | 'read' | 'write') => {
+    const fullKey = generateMockKey();
     const newKey: ApiKey = {
-      id: `key-${generateId()}`,
+      id: generateId(),
       name,
-      key: generateMockKey(),
+      key: fullKey,
       createdAt: new Date().toISOString(),
       scope,
       status: 'active',
     };
+
+    if (auth.currentOrg) {
+      const { error } = await supabase.from('api_keys').insert({
+        org_id: auth.currentOrg.id,
+        name,
+        key_hash: fullKey,
+        scope,
+        status: 'active',
+      });
+      if (error) {
+        addToast('Failed to create API key: ' + error.message, 'error');
+        // Don't add to local state if DB insert failed
+        return newKey;
+      }
+    }
+
     setApiKeys(prev => [...prev, newKey]);
+    addToast(`API key "${name}" created`, 'success');
     return newKey;
-  }, []);
+  }, [auth.currentOrg, addToast]);
 
-  const revokeApiKey = useCallback((keyId: string) => {
-    setApiKeys(prev => prev.map(k => k.id === keyId ? { ...k, status: 'revoked' as const } : k));
-  }, []);
+  const revokeApiKey = useCallback(async (keyId: string, keyName: string) => {
+    // Optimistic update: remove from UI immediately
+    setApiKeys(prev => prev.filter(k => k.id !== keyId));
 
-  // Simulated WebSocket event stream
+    const { error } = await supabase.from('api_keys').update({ status: 'revoked' }).eq('id', keyId);
+    if (error) {
+      // Rollback: re-add the key to UI
+      addToast('Failed to revoke key: ' + error.message, 'error');
+      // Reload keys from DB to restore state
+      if (auth.currentOrg) {
+        const { data: keys } = await supabase.from('api_keys').select('*').eq('org_id', auth.currentOrg.id).eq('status', 'active');
+        if (keys) {
+          setApiKeys(keys.map((k: Record<string, unknown>) => ({
+            id: k.id as string,
+            name: k.name as string,
+            key: k.key_hash as string,
+            createdAt: k.created_at as string,
+            scope: k.scope as 'full' | 'read' | 'write',
+            status: k.status as 'active' | 'revoked',
+          })));
+        }
+      }
+    } else {
+      addToast(`Key "${keyName}" revoked`, 'success');
+    }
+  }, [auth.currentOrg, addToast]);
+
+  // Telemetry persistence with debounce
+  const lastTelemetrySaveRef = useRef<number>(0);
+  useEffect(() => {
+    if (!auth.currentOrg || !auth.isAuthenticated) return;
+
+    if (telemetryTimerRef.current) clearInterval(telemetryTimerRef.current);
+    telemetryTimerRef.current = setInterval(async () => {
+      const now = Date.now();
+      if (now - lastTelemetrySaveRef.current < 25000) return; // debounce
+      lastTelemetrySaveRef.current = now;
+
+      const { error } = await supabase.from('telemetry_snapshots').insert({
+        org_id: auth.currentOrg!.id,
+        p50_latency_ms: telemetry.p50LatencyMs,
+        audio_throughput_kbps: telemetry.audioThroughputKbps,
+        token_gen_speed_tps: telemetry.tokenGenSpeedTps,
+        failover_pro_pct: telemetry.failoverProPrimaryPercent,
+        failover_flash_pct: telemetry.failoverFlashPercent,
+      });
+      if (error) {
+        // Silent failure for telemetry - non-critical data
+        console.warn('Telemetry snapshot failed:', error.message);
+      }
+    }, 30000);
+
+    return () => {
+      if (telemetryTimerRef.current) clearInterval(telemetryTimerRef.current);
+    };
+  }, [auth.currentOrg, auth.isAuthenticated, telemetry.p50LatencyMs, telemetry.audioThroughputKbps, telemetry.tokenGenSpeedTps, telemetry.failoverProPrimaryPercent, telemetry.failoverFlashPercent]);
+
+  // WebSocket simulation with race condition protection
   useEffect(() => {
     if (session.status !== 'active') {
-      if (wsIntervalRef.current) clearInterval(wsIntervalRef.current);
-      wsIntervalRef.current = null;
+      if (wsIntervalRef.current) { clearInterval(wsIntervalRef.current); wsIntervalRef.current = null; }
+      wsLockRef.current = false;
       return;
     }
-    if (wsIntervalRef.current) return;
+
+    // Use a lock to prevent duplicate intervals
+    if (wsLockRef.current) return;
+    wsLockRef.current = true;
 
     let eventCounter = 0;
     wsIntervalRef.current = setInterval(() => {
@@ -245,7 +469,6 @@ export function useAppState() {
         logs: [...prev.logs.slice(-200), logEntry],
       }));
 
-      // Occasionally add transcript entries
       if (eventCounter % 8 === 0) {
         const idx = transcriptIdxRef.current % Math.min(USER_TRANSCRIPTS.length, AGENT_TRANSCRIPTS.length);
         const userEntry: TranscriptEntry = {
@@ -282,7 +505,6 @@ export function useAppState() {
         }, 800);
       }
 
-      // Update telemetry periodically
       if (eventCounter % 5 === 0) {
         setTelemetry(prev => {
           const newLatency = prev.p50LatencyMs + (Math.random() - 0.5) * 200;
@@ -307,17 +529,19 @@ export function useAppState() {
     }, 1500);
 
     return () => {
-      if (wsIntervalRef.current) clearInterval(wsIntervalRef.current);
-      wsIntervalRef.current = null;
+      if (wsIntervalRef.current) { clearInterval(wsIntervalRef.current); wsIntervalRef.current = null; }
+      wsLockRef.current = false;
     };
   }, [session.status]);
 
   return {
     auth,
+    authLoading,
     activeView,
     session,
     apiKeys,
     telemetry,
+    toasts,
     signIn,
     signUp,
     signOut,
@@ -329,5 +553,6 @@ export function useAppState() {
     switchBackend,
     generateApiKey,
     revokeApiKey,
+    addToast,
   };
 }
