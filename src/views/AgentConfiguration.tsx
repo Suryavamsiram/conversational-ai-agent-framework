@@ -1,21 +1,7 @@
 import { useState } from 'react';
 import { useApp } from '../state/AppContext';
 import type { AgentConfig, WebhookCallback } from '../types';
-import {
-  Bot,
-  Plus,
-  Save,
-  Power,
-  PowerOff,
-  Sliders,
-  MessageSquare,
-  Thermometer,
-  Volume2,
-  Globe,
-  X,
-  ChevronDown,
-  ChevronRight,
-} from 'lucide-react';
+import { Bot, Plus, Save, Power, PowerOff, FileSliders as Sliders, MessageSquare, Thermometer, Volume2, Globe, X, ChevronDown, ChevronRight } from 'lucide-react';
 
 const EMPTY_AGENT: AgentConfig = {
   id: '',
