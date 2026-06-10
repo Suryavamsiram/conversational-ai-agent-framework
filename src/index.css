@@ -28,6 +28,9 @@
   --color-red-500: #ef4444;
   --color-red-600: #dc2626;
   --color-red-700: #b91c1c;
+  --color-orange-400: #fb923c;
+  --color-orange-500: #f97316;
+  --color-orange-600: #ea580c;
   --font-mono: 'JetBrains Mono', ui-monospace, Consolas, monospace;
 }
 
@@ -51,6 +54,38 @@
   50% { opacity: 0.3; }
 }
 
+@keyframes grid-scroll {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(48px); }
+}
+
+@keyframes mirror-shift {
+  0%, 100% { transform: perspective(800px) rotateY(0deg) skewX(0deg); }
+  25% { transform: perspective(800px) rotateY(2deg) skewX(-1deg); }
+  50% { transform: perspective(800px) rotateY(0deg) skewX(0deg); }
+  75% { transform: perspective(800px) rotateY(-2deg) skewX(1deg); }
+}
+
+@keyframes text-glow {
+  0%, 100% { text-shadow: 0 0 20px rgba(249, 115, 22, 0.3); }
+  50% { text-shadow: 0 0 40px rgba(249, 115, 22, 0.6), 0 0 80px rgba(249, 115, 22, 0.2); }
+}
+
+@keyframes float-up {
+  0% { opacity: 0; transform: translateY(40px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes spin-slow {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes gradient-x {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
 * {
   scrollbar-width: thin;
   scrollbar-color: #334155 transparent;
@@ -69,6 +104,10 @@ body {
   min-height: 100vh;
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 .animate-wave-bar {
   animation: pulse-wave 1.2s ease-in-out infinite;
 }
@@ -83,4 +122,29 @@ body {
 
 .animate-blink {
   animation: blink 1.5s ease-in-out infinite;
+}
+
+.animate-grid-scroll {
+  animation: grid-scroll 8s linear infinite;
+}
+
+.animate-mirror {
+  animation: mirror-shift 8s ease-in-out infinite;
+}
+
+.animate-text-glow {
+  animation: text-glow 3s ease-in-out infinite;
+}
+
+.animate-float-up {
+  animation: float-up 0.8s ease-out forwards;
+}
+
+.animate-spin-slow {
+  animation: spin-slow 20s linear infinite;
+}
+
+.animate-gradient-x {
+  background-size: 200% 200%;
+  animation: gradient-x 4s ease infinite;
 }
