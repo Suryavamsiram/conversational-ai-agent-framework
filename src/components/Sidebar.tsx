@@ -1,12 +1,14 @@
 import { useApp } from '../state/AppContext';
 import type { AppView } from '../types';
-import { Radio, Code as Code2, ChartBar as BarChart3, CreditCard, LogOut, ChevronDown, Building2 } from 'lucide-react';
+import { Radio, Code as Code2, ChartBar as BarChart3, CreditCard, LogOut, ChevronDown, Building2, Bot, Phone } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 
 const NAV_ITEMS: { view: AppView; label: string; icon: React.ElementType }[] = [
   { view: 'console', label: 'Agent Console', icon: Radio },
   { view: 'developer', label: 'Developer Portal', icon: Code2 },
   { view: 'analytics', label: 'Analytics', icon: BarChart3 },
+  { view: 'agents', label: 'Agent Config', icon: Bot },
+  { view: 'routing', label: 'Phone Routing', icon: Phone },
   { view: 'billing', label: 'Billing', icon: CreditCard },
 ];
 

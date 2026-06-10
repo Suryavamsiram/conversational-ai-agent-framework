@@ -83,4 +83,59 @@ export interface BillingPlan {
   highlighted: boolean;
 }
 
-export type AppView = 'console' | 'developer' | 'analytics' | 'billing';
+// Extended types for new views
+
+export interface AgentConfig {
+  id: string;
+  name: string;
+  description: string;
+  systemPrompt: string;
+  modelTemperature: number;
+  modelTopP: number;
+  maxTokenCap: number;
+  voicePitch: number;
+  voiceSpeed: number;
+  voiceGender: 'male' | 'female' | 'neutral';
+  isActive: boolean;
+  createdAt: string;
+}
+
+export interface WebhookCallback {
+  id: string;
+  label: string;
+  url: string;
+  event: 'on_transcription' | 'on_response' | 'on_error' | 'on_disconnect';
+  isActive: boolean;
+}
+
+export interface PhoneRoutingEntry {
+  id: string;
+  phoneNumber: string;
+  country: string;
+  assignedAgentId: string | null;
+  assignedAgentName: string | null;
+  status: 'active' | 'inactive' | 'pending';
+  monthlyCost: number;
+  minutesUsed: number;
+}
+
+export interface InvoiceLineItem {
+  id: string;
+  date: string;
+  description: string;
+  quantity: number;
+  unitPrice: number;
+  total: number;
+  status: 'paid' | 'pending' | 'overdue';
+}
+
+export type CallLifecyclePhase =
+  | 'idle'
+  | 'handshake'
+  | 'user_speaking'
+  | 'model_processing'
+  | 'agent_speaking'
+  | 'disconnecting'
+  | 'disconnected';
+
+export type AppView = 'console' | 'developer' | 'analytics' | 'agents' | 'routing' | 'billing';

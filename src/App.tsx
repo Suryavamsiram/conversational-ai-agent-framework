@@ -6,6 +6,8 @@ import Sidebar from './components/Sidebar';
 import AgentConsole from './views/AgentConsole';
 import DeveloperPortal from './views/DeveloperPortal';
 import AnalyticsTelemetry from './views/AnalyticsTelemetry';
+import AgentConfiguration from './views/AgentConfiguration';
+import PhoneRouting from './views/PhoneRouting';
 import BillingSubscriptions from './views/BillingSubscriptions';
 import { Radio } from 'lucide-react';
 
@@ -16,6 +18,8 @@ function AppContent() {
     console: 'Agent Console',
     developer: 'Developer Portal',
     analytics: 'Analytics & Telemetry',
+    agents: 'Agent Configuration',
+    routing: 'Phone Routing',
     billing: 'Billing & Subscriptions',
   };
 
@@ -42,6 +46,8 @@ function AppContent() {
             {activeView === 'console' && <AgentConsole />}
             {activeView === 'developer' && <DeveloperPortal />}
             {activeView === 'analytics' && <AnalyticsTelemetry />}
+            {activeView === 'agents' && <AgentConfiguration />}
+            {activeView === 'routing' && <PhoneRouting />}
             {activeView === 'billing' && <BillingSubscriptions />}
           </main>
         </div>

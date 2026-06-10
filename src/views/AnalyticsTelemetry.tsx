@@ -2,10 +2,13 @@ import { useApp } from '../state/AppContext';
 import {
   Clock,
   Activity,
-  Zap,
   ShieldCheck,
   TrendingUp,
   TrendingDown,
+  Cpu,
+  Wifi,
+  DollarSign,
+  Hash,
 } from 'lucide-react';
 
 function MiniBarChart({ data, maxVal, color, threshold, thresholdLabel }: {
@@ -56,12 +59,12 @@ function MiniLineChart({ data, maxVal, color }: { data: number[]; maxVal: number
   return (
     <svg viewBox="0 0 100 100" className="w-full h-16" preserveAspectRatio="none">
       <defs>
-        <linearGradient id={`grad-${color}`} x1="0" x2="0" y1="0" y2="1">
+        <linearGradient id={`grad-${color.replace('#', '')}`} x1="0" x2="0" y1="0" y2="1">
           <stop offset="0%" stopColor={color} stopOpacity="0.3" />
           <stop offset="100%" stopColor={color} stopOpacity="0" />
         </linearGradient>
       </defs>
-      <polygon points={areaPoints} fill={`url(#grad-${color})`} />
+      <polygon points={areaPoints} fill={`url(#grad-${color.replace('#', '')})`} />
       <polyline points={points} fill="none" stroke={color} strokeWidth="2" vectorEffect="non-scaling-stroke" />
     </svg>
   );
@@ -78,17 +81,16 @@ function DonutChart({ primary, secondary, primaryLabel, secondaryLabel, primaryC
   const total = primary + secondary;
   const primaryAngle = (primary / total) * 360;
 
-  // SVG arc paths
+  const polarToCartesian = (cx: number, cy: number, r: number, angle: number) => {
+    const rad = ((angle - 90) * Math.PI) / 180;
+    return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) };
+  };
+
   const describeArc = (startAngle: number, endAngle: number) => {
     const start = polarToCartesian(50, 50, 40, endAngle);
     const end = polarToCartesian(50, 50, 40, startAngle);
     const largeArc = endAngle - startAngle > 180 ? 1 : 0;
     return `M 50 50 L ${start.x} ${start.y} A 40 40 0 ${largeArc} 0 ${end.x} ${end.y} Z`;
-  };
-
-  const polarToCartesian = (cx: number, cy: number, r: number, angle: number) => {
-    const rad = ((angle - 90) * Math.PI) / 180;
-    return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) };
   };
 
   return (
@@ -117,131 +119,178 @@ function DonutChart({ primary, secondary, primaryLabel, secondaryLabel, primaryC
   );
 }
 
+function MetricCard({ icon: Icon, iconBg, iconColor, label, sublabel, value, unit, delta, deltaColor, deltaSuffix }: {
+  icon: React.ElementType;
+  iconBg: string;
+  iconColor: string;
+  label: string;
+  sublabel: string;
+  value: string;
+  unit?: string;
+  delta: number;
+  deltaColor: string;
+  deltaSuffix: string;
+}) {
+  return (
+    <div className="bg-slate-900/60 border border-slate-700/40 rounded-xl p-5">
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <div className={`w-8 h-8 rounded-lg ${iconBg} border flex items-center justify-center`}>
+            <Icon className={`w-4 h-4 ${iconColor}`} />
+          </div>
+          <div>
+            <div className="text-sm font-medium text-slate-200">{label}</div>
+            <div className="text-[10px] text-slate-500 uppercase tracking-wider">{sublabel}</div>
+          </div>
+        </div>
+        <div className="flex items-center gap-1 text-xs">
+          {delta <= 0 ? <TrendingDown className="w-3.5 h-3.5 text-emerald-400" /> : <TrendingUp className="w-3.5 h-3.5" style={{ color: deltaColor }} />}
+          <span style={{ color: deltaColor }}>{Math.abs(delta).toFixed(0)}{deltaSuffix}</span>
+        </div>
+      </div>
+      <div className="text-3xl font-bold font-mono" style={{ color: iconColor }}>
+        {value}{unit && <span className="text-lg">{unit}</span>}
+      </div>
+    </div>
+  );
+}
+
 export default function AnalyticsTelemetry() {
-  const { telemetry } = useApp();
+  const {
+    telemetry, jitterMs, packetLossPercent,
+    activeConcurrentPipelines, tokenUsageTotal, estimatedCostUsd,
+  } = useApp();
 
   const latencyDelta = telemetry.p50LatencyMs - telemetry.latencyHistory[telemetry.latencyHistory.length - 2];
   const throughputDelta = telemetry.audioThroughputKbps - telemetry.throughputHistory[telemetry.throughputHistory.length - 2];
-  const tokenDelta = telemetry.tokenGenSpeedTps - telemetry.tokenHistory[telemetry.tokenHistory.length - 2];
+
+  // Dynamic color based on latency threshold
+  const latencyColor = telemetry.p50LatencyMs < 1500 ? '#10b981' : telemetry.p50LatencyMs < 2000 ? '#f59e0b' : '#ef4444';
 
   return (
     <div className="flex-1 overflow-y-auto">
-      <div className="px-8 py-6 max-w-5xl">
+      <div className="px-8 py-6 max-w-6xl">
         <div className="mb-8">
           <h1 className="text-xl font-semibold text-slate-100 mb-1">Analytics & Performance Telemetry</h1>
           <p className="text-sm text-slate-500">Real-time infrastructure monitoring and metrics</p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        {/* Top Row: 6 Dense Metric Cards */}
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-5">
           {/* P50 Latency */}
           <div className="bg-slate-900/60 border border-slate-700/40 rounded-xl p-5">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
-                  <Clock className="w-4 h-4 text-emerald-400" />
+                <div className={`w-8 h-8 rounded-lg ${telemetry.p50LatencyMs < 1500 ? 'bg-emerald-500/10 border-emerald-500/20' : telemetry.p50LatencyMs < 2000 ? 'bg-amber-500/10 border-amber-500/20' : 'bg-red-500/10 border-red-500/20'} border flex items-center justify-center`}>
+                  <Clock className={`w-4 h-4 ${telemetry.p50LatencyMs < 1500 ? 'text-emerald-400' : telemetry.p50LatencyMs < 2000 ? 'text-amber-400' : 'text-red-400'}`} />
                 </div>
                 <div>
-                  <div className="text-sm font-medium text-slate-200">P50 Latency Engine Clock</div>
+                  <div className="text-sm font-medium text-slate-200">P50 System Latency</div>
                   <div className="text-[10px] text-slate-500 uppercase tracking-wider">Target: sub-1.5s</div>
                 </div>
               </div>
               <div className="flex items-center gap-1 text-xs">
-                {latencyDelta <= 0 ? (
-                  <TrendingDown className="w-3.5 h-3.5 text-emerald-400" />
-                ) : (
-                  <TrendingUp className="w-3.5 h-3.5 text-amber-400" />
-                )}
-                <span className={latencyDelta <= 0 ? 'text-emerald-400' : 'text-amber-400'}>
-                  {Math.abs(latencyDelta).toFixed(0)}ms
-                </span>
+                {latencyDelta <= 0 ? <TrendingDown className="w-3.5 h-3.5 text-emerald-400" /> : <TrendingUp className="w-3.5 h-3.5 text-amber-400" />}
+                <span className={latencyDelta <= 0 ? 'text-emerald-400' : 'text-amber-400'}>{Math.abs(latencyDelta).toFixed(0)}ms</span>
               </div>
             </div>
-            <div className="text-3xl font-bold text-emerald-400 mb-4 font-mono">
+            <div className="text-3xl font-bold font-mono" style={{ color: latencyColor }}>
               {(telemetry.p50LatencyMs / 1000).toFixed(2)}s
             </div>
-            <MiniBarChart
-              data={telemetry.latencyHistory}
-              maxVal={2000}
-              color="#10b981"
-              threshold={1500}
-              thresholdLabel="1.5s SLA"
-            />
+            <MiniBarChart data={telemetry.latencyHistory} maxVal={2000} color={latencyColor} threshold={1500} thresholdLabel="1.5s SLA" />
+          </div>
+
+          {/* Concurrency */}
+          <MetricCard
+            icon={Cpu} iconBg="bg-indigo-500/10" iconColor="text-indigo-400"
+            label="Concurrent Pipelines" sublabel="Active streaming sessions"
+            value={activeConcurrentPipelines.toString()} delta={0} deltaColor="#818cf8" deltaSuffix=""
+          />
+
+          {/* Jitter */}
+          <div className="bg-slate-900/60 border border-slate-700/40 rounded-xl p-5">
+            <div className="flex items-center gap-2 mb-4">
+              <div className={`w-8 h-8 rounded-lg ${jitterMs < 20 ? 'bg-emerald-500/10 border-emerald-500/20' : 'bg-amber-500/10 border-amber-500/20'} border flex items-center justify-center`}>
+                <Wifi className={`w-4 h-4 ${jitterMs < 20 ? 'text-emerald-400' : 'text-amber-400'}`} />
+              </div>
+              <div>
+                <div className="text-sm font-medium text-slate-200">Connection Quality</div>
+                <div className="text-[10px] text-slate-500 uppercase tracking-wider">Jitter / Packet Loss</div>
+              </div>
+            </div>
+            <div className="flex items-baseline gap-3">
+              <div>
+                <span className={`text-2xl font-bold font-mono ${jitterMs < 20 ? 'text-emerald-400' : 'text-amber-400'}`}>{jitterMs.toFixed(1)}</span>
+                <span className="text-sm text-slate-500 ml-1">ms jitter</span>
+              </div>
+              <div className="w-px h-6 bg-slate-700" />
+              <div>
+                <span className={`text-2xl font-bold font-mono ${packetLossPercent < 1 ? 'text-emerald-400' : 'text-amber-400'}`}>{packetLossPercent.toFixed(1)}</span>
+                <span className="text-sm text-slate-500 ml-1">% loss</span>
+              </div>
+            </div>
           </div>
 
           {/* Audio Throughput */}
           <div className="bg-slate-900/60 border border-slate-700/40 rounded-xl p-5">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center">
+                <div className="w-8 h-8 rounded-lg bg-indigo-500/10 border-indigo-500/20 border flex items-center justify-center">
                   <Activity className="w-4 h-4 text-indigo-400" />
                 </div>
                 <div>
-                  <div className="text-sm font-medium text-slate-200">Audio Stream Throughput</div>
+                  <div className="text-sm font-medium text-slate-200">Audio Throughput</div>
                   <div className="text-[10px] text-slate-500 uppercase tracking-wider">24kHz 16-bit Mono PCM</div>
                 </div>
               </div>
               <div className="flex items-center gap-1 text-xs">
-                {throughputDelta >= 0 ? (
-                  <TrendingUp className="w-3.5 h-3.5 text-indigo-400" />
-                ) : (
-                  <TrendingDown className="w-3.5 h-3.5 text-amber-400" />
-                )}
-                <span className={throughputDelta >= 0 ? 'text-indigo-400' : 'text-amber-400'}>
-                  {Math.abs(throughputDelta).toFixed(0)} kbps
-                </span>
+                {throughputDelta >= 0 ? <TrendingUp className="w-3.5 h-3.5 text-indigo-400" /> : <TrendingDown className="w-3.5 h-3.5 text-amber-400" />}
+                <span className={throughputDelta >= 0 ? 'text-indigo-400' : 'text-amber-400'}>{Math.abs(throughputDelta).toFixed(0)} kbps</span>
               </div>
             </div>
             <div className="text-3xl font-bold text-indigo-400 mb-4 font-mono">
-              {telemetry.audioThroughputKbps.toFixed(0)} kbps
+              {telemetry.audioThroughputKbps.toFixed(0)} <span className="text-lg">kbps</span>
             </div>
-            <MiniLineChart
-              data={telemetry.throughputHistory}
-              maxVal={500}
-              color="#818cf8"
-            />
+            <MiniLineChart data={telemetry.throughputHistory} maxVal={500} color="#818cf8" />
           </div>
 
-          {/* Token Generation Speed */}
+          {/* Token Usage & Cost */}
           <div className="bg-slate-900/60 border border-slate-700/40 rounded-xl p-5">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center">
-                  <Zap className="w-4 h-4 text-amber-400" />
-                </div>
-                <div>
-                  <div className="text-sm font-medium text-slate-200">Token Generation Speed</div>
-                  <div className="text-[10px] text-slate-500 uppercase tracking-wider">Inference throughput</div>
-                </div>
+            <div className="flex items-center gap-2 mb-4">
+              <div className="w-8 h-8 rounded-lg bg-amber-500/10 border-amber-500/20 border flex items-center justify-center">
+                <DollarSign className="w-4 h-4 text-amber-400" />
               </div>
-              <div className="flex items-center gap-1 text-xs">
-                {tokenDelta >= 0 ? (
-                  <TrendingUp className="w-3.5 h-3.5 text-amber-400" />
-                ) : (
-                  <TrendingDown className="w-3.5 h-3.5 text-red-400" />
-                )}
-                <span className={tokenDelta >= 0 ? 'text-amber-400' : 'text-red-400'}>
-                  {Math.abs(tokenDelta).toFixed(1)} t/s
-                </span>
+              <div>
+                <div className="text-sm font-medium text-slate-200">Token Efficiency</div>
+                <div className="text-[10px] text-slate-500 uppercase tracking-wider">Usage / Cost tracking</div>
               </div>
             </div>
-            <div className="text-3xl font-bold text-amber-400 mb-4 font-mono">
-              {telemetry.tokenGenSpeedTps.toFixed(1)} <span className="text-lg">t/s</span>
+            <div className="flex items-baseline gap-3">
+              <div>
+                <span className="text-xl font-bold font-mono text-amber-400">{(tokenUsageTotal / 1000).toFixed(0)}K</span>
+                <span className="text-xs text-slate-500 ml-1">tokens</span>
+              </div>
+              <div className="w-px h-5 bg-slate-700" />
+              <div>
+                <span className="text-xl font-bold font-mono text-emerald-400">${estimatedCostUsd.toFixed(2)}</span>
+                <span className="text-xs text-slate-500 ml-1">est. cost</span>
+              </div>
             </div>
-            <MiniLineChart
-              data={telemetry.tokenHistory}
-              maxVal={120}
-              color="#fbbf24"
-            />
+            <div className="mt-3 flex items-center gap-2">
+              <Hash className="w-3.5 h-3.5 text-slate-500" />
+              <span className="text-sm font-mono text-slate-300">{telemetry.tokenGenSpeedTps.toFixed(1)} t/s</span>
+              <MiniLineChart data={telemetry.tokenHistory} maxVal={120} color="#fbbf24" />
+            </div>
           </div>
 
           {/* Failover Ratio */}
           <div className="bg-slate-900/60 border border-slate-700/40 rounded-xl p-5">
             <div className="flex items-center gap-2 mb-4">
-              <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-indigo-500/20 flex items-center justify-center">
+              <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border-indigo-500/20 border flex items-center justify-center">
                 <ShieldCheck className="w-4 h-4 text-emerald-400" />
               </div>
               <div>
-                <div className="text-sm font-medium text-slate-200">Failover & Resilience Ratio</div>
+                <div className="text-sm font-medium text-slate-200">Failover & Resilience</div>
                 <div className="text-[10px] text-slate-500 uppercase tracking-wider">Model routing stability</div>
               </div>
             </div>

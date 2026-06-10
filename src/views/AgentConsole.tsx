@@ -1,7 +1,8 @@
 import { useApp } from '../state/AppContext';
-import type { VoiceSessionStatus } from '../types';
-import { Wifi, WifiOff, TriangleAlert as AlertTriangle, Loader as Loader2, Mic, MicOff, OctagonAlert as AlertOctagon, ArrowDownToLine } from 'lucide-react';
+import type { VoiceSessionStatus, CallLifecyclePhase } from '../types';
+import { Wifi, WifiOff, TriangleAlert as AlertTriangle, Loader as Loader2, Mic, MicOff, OctagonAlert as AlertOctagon, ArrowDownToLine, User, Bot, Brain } from 'lucide-react';
 import { useEffect, useRef } from 'react';
+import AudioVisualizer from '../components/AudioVisualizer';
 
 const STATUS_CONFIG: Record<VoiceSessionStatus, { label: string; color: string; bg: string; icon: React.ElementType }> = {
   connecting: { label: 'Connecting', color: 'text-amber-400', bg: 'bg-amber-400/10 border-amber-400/30', icon: Loader2 },
@@ -10,39 +11,22 @@ const STATUS_CONFIG: Record<VoiceSessionStatus, { label: string; color: string; 
   disconnected: { label: 'Disconnected', color: 'text-slate-400', bg: 'bg-slate-400/10 border-slate-400/30', icon: WifiOff },
 };
 
-function WaveformVisualizer({ isActive }: { isActive: boolean }) {
-  if (!isActive) return null;
-  const bars = 64;
-  return (
-    <div className="flex items-center justify-center h-40 gap-[2px] px-4">
-      {Array.from({ length: bars }).map((_, i) => {
-        const centerDist = Math.abs(i - bars / 2) / (bars / 2);
-        const baseHeight = (1 - centerDist * 0.6) * 70;
-        const delay = (i * 0.04) % 1.2;
-        return (
-          <div
-            key={i}
-            className="w-[3px] rounded-full bg-gradient-to-t from-emerald-500/40 to-emerald-400 animate-wave-bar origin-bottom"
-            style={{
-              height: `${baseHeight}%`,
-              animationDelay: `${delay}s`,
-              animationDuration: `${0.8 + Math.random() * 0.8}s`,
-            }}
-          />
-        );
-      })}
-    </div>
-  );
-}
+const PHASE_INDICATOR: Record<CallLifecyclePhase, { label: string; color: string; icon: React.ElementType }> = {
+  idle: { label: 'Idle', color: 'text-slate-500', icon: MicOff },
+  handshake: { label: 'Handshake', color: 'text-amber-400', icon: Loader2 },
+  user_speaking: { label: 'User Speaking', color: 'text-emerald-400', icon: User },
+  model_processing: { label: 'Processing', color: 'text-amber-400', icon: Brain },
+  agent_speaking: { label: 'Agent Speaking', color: 'text-indigo-400', icon: Bot },
+  disconnecting: { label: 'Disconnecting', color: 'text-red-400', icon: WifiOff },
+  disconnected: { label: 'Disconnected', color: 'text-slate-500', icon: WifiOff },
+};
 
 function TranscriptPanel() {
   const { session } = useApp();
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
+    if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
   }, [session.transcripts]);
 
   return (
@@ -62,10 +46,15 @@ function TranscriptPanel() {
           }`}
         >
           <div className="flex items-center gap-2 mb-1">
+            {entry.role === 'user' ? (
+              <User className="w-3.5 h-3.5 text-emerald-400" />
+            ) : (
+              <Bot className="w-3.5 h-3.5 text-indigo-400" />
+            )}
             <span className={`text-[10px] font-semibold uppercase tracking-wider ${
               entry.role === 'user' ? 'text-emerald-400' : 'text-indigo-400'
             }`}>
-              {entry.role === 'user' ? 'User Transcript' : 'Agent Response'}
+              {entry.role === 'user' ? 'User' : 'Voice Agent'}
             </span>
             <span className="text-[10px] text-slate-600">
               {new Date(entry.timestamp).toLocaleTimeString()}
@@ -90,9 +79,7 @@ function DevConsole() {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
+    if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
   }, [session.logs]);
 
   return (
@@ -121,10 +108,12 @@ function DevConsole() {
 }
 
 export default function AgentConsole() {
-  const { session, connectSession, disconnectSession, manualInterrupt, switchBackend } = useApp();
+  const { session, lifecyclePhase, connectSession, disconnectSession, manualInterrupt, switchBackend } = useApp();
   const statusCfg = STATUS_CONFIG[session.status];
   const StatusIcon = statusCfg.icon;
-  const isActive = session.status === 'active';
+  const isActive = session.status === 'active' || session.status === 'interrupted';
+  const phaseCfg = PHASE_INDICATOR[lifecyclePhase];
+  const PhaseIcon = phaseCfg.icon;
 
   return (
     <div className="flex-1 flex flex-col h-full overflow-hidden">
@@ -139,10 +128,17 @@ export default function AgentConsole() {
             )}
             {statusCfg.label}
           </div>
+          {/* Lifecycle Phase Indicator */}
+          {isActive && (
+            <div className={`inline-flex items-center gap-1.5 text-xs font-medium ${phaseCfg.color}`}>
+              <PhaseIcon className={`w-3.5 h-3.5 ${lifecyclePhase === 'handshake' || lifecyclePhase === 'model_processing' ? 'animate-pulse' : ''}`} />
+              {phaseCfg.label}
+            </div>
+          )}
           {isActive && (
             <div className="flex items-center gap-2 text-xs text-slate-500">
               <ArrowDownToLine className="w-3 h-3" />
-              <span>Streaming @ {24}kHz / 16-bit Mono</span>
+              <span>Streaming @ 24kHz / 16-bit Mono</span>
             </div>
           )}
         </div>
@@ -156,7 +152,7 @@ export default function AgentConsole() {
                   : 'text-slate-500 hover:text-slate-300 border border-transparent'
               }`}
             >
-              Gemini 3.1 Pro Preview
+              Gemini 3.1 Pro
             </button>
             <button
               onClick={() => switchBackend('gemini-2.5-flash-fallback')}
@@ -166,7 +162,7 @@ export default function AgentConsole() {
                   : 'text-slate-500 hover:text-slate-300 border border-transparent'
               }`}
             >
-              Gemini 2.5 Flash Fallback
+              2.5 Flash Fallback
             </button>
           </div>
         </div>
@@ -174,10 +170,10 @@ export default function AgentConsole() {
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Waveform Panel */}
+        {/* Canvas Audio Visualizer */}
         <div className="relative border-b border-slate-700/40 bg-slate-950/50">
           {isActive ? (
-            <WaveformVisualizer isActive />
+            <AudioVisualizer isActive={isActive} phase={lifecyclePhase} />
           ) : (
             <div className="h-40 flex items-center justify-center">
               <button
@@ -187,12 +183,6 @@ export default function AgentConsole() {
                 <Mic className="w-5 h-5 group-hover:scale-110 transition-transform" />
                 <span className="text-sm font-medium">Click to Connect Mic</span>
               </button>
-            </div>
-          )}
-          {/* Scan line effect */}
-          {isActive && (
-            <div className="absolute inset-0 pointer-events-none overflow-hidden">
-              <div className="w-full h-px bg-emerald-400/10 animate-scan" />
             </div>
           )}
         </div>
