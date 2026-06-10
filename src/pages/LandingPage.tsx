@@ -58,26 +58,9 @@ function FluidicGrid() {
     window.addEventListener('mouseleave', onLeave);
 
     const SPACING = 32;
-    const INFLUENCE = 200;
-    const PUSH = 16;
+    const INFLUENCE = 180;
+    const PUSH = 14;
     let t = 0;
-
-    // Pre-compute grid positions for performance
-    const computeGrid = (time: number, w: number, h: number) => {
-      const cols = Math.ceil(w / SPACING) + 1;
-      const rows = Math.ceil(h / SPACING) + 1;
-      const grid: { px: number; py: number; col: number; row: number }[] = [];
-      for (let row = 0; row < rows; row++) {
-        for (let col = 0; col < cols; col++) {
-          const bx = col * SPACING;
-          const by = row * SPACING;
-          const waveX = Math.sin(by * 0.008 + time * 0.0015) * 3 + Math.cos(bx * 0.005 + time * 0.001) * 2;
-          const waveY = Math.cos(bx * 0.008 + time * 0.0012) * 3 + Math.sin(by * 0.005 + time * 0.001) * 2;
-          grid.push({ px: bx + waveX, py: by + waveY, col, row });
-        }
-      }
-      return { grid, cols, rows };
-    };
 
     const draw = () => {
       const w = window.innerWidth;
@@ -86,109 +69,91 @@ function FluidicGrid() {
 
       const mx = mouseRef.current.x;
       const my = mouseRef.current.y;
-      const { grid, cols } = computeGrid(t, w, h);
 
-      // Pass 1: Draw ALL grid lines (always visible, subtle)
-      ctx.lineWidth = 0.5;
-      for (let i = 0; i < grid.length; i++) {
-        const { px, py, col } = grid[i];
+      // Draw grid dots
+      const cols = Math.ceil(w / SPACING) + 1;
+      const rows = Math.ceil(h / SPACING) + 1;
 
-        // Horizontal line to right neighbor
-        if (col < cols - 1) {
-          const rightIdx = i + 1;
-          if (rightIdx < grid.length) {
-            ctx.beginPath();
-            ctx.moveTo(px, py);
-            ctx.lineTo(grid[rightIdx].px, grid[rightIdx].py);
-            ctx.strokeStyle = 'rgba(249,115,22,0.03)';
-            ctx.stroke();
+      for (let row = 0; row < rows; row++) {
+        for (let col = 0; col < cols; col++) {
+          const bx = col * SPACING;
+          const by = row * SPACING;
+
+          // Wave displacement
+          const waveX = Math.sin(by * 0.008 + t * 0.0015) * 3 + Math.cos(bx * 0.005 + t * 0.001) * 2;
+          const waveY = Math.cos(bx * 0.008 + t * 0.0012) * 3 + Math.sin(by * 0.005 + t * 0.001) * 2;
+
+          let px = bx + waveX;
+          let py = by + waveY;
+
+          // Mouse push
+          const dx = px - mx;
+          const dy = py - my;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          let alpha = 0.08;
+          let size = 1;
+
+          if (dist < INFLUENCE) {
+            const force = (1 - dist / INFLUENCE);
+            const angle = Math.atan2(dy, dx);
+            px += Math.cos(angle) * force * PUSH;
+            py += Math.sin(angle) * force * PUSH;
+            alpha = 0.08 + force * 0.55;
+            size = 1 + force * 2.5;
           }
-        }
 
-        // Vertical line to bottom neighbor
-        const bottomIdx = i + cols;
-        if (bottomIdx < grid.length && grid[bottomIdx].col === col) {
+          // Color: orange near mouse, slate far away
+          const r = dist < INFLUENCE ? 249 : 100;
+          const g = dist < INFLUENCE ? 115 : 116;
+          const b = dist < INFLUENCE ? 22 : 139;
+
           ctx.beginPath();
-          ctx.moveTo(px, py);
-          ctx.lineTo(grid[bottomIdx].px, grid[bottomIdx].py);
-          ctx.strokeStyle = 'rgba(249,115,22,0.03)';
-          ctx.stroke();
-        }
-      }
+          ctx.arc(px, py, size, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(${r},${g},${b},${alpha})`;
+          ctx.fill();
 
-      // Pass 2: Draw ALL dots + compute mouse-reactive overlay
-      for (let i = 0; i < grid.length; i++) {
-        const { px: basePx, py: basePy, col } = grid[i];
-
-        const dx = basePx - mx;
-        const dy = basePy - my;
-        const dist = Math.sqrt(dx * dx + dy * dy);
-
-        let px = basePx;
-        let py = basePy;
-        let dotAlpha = 0.06;
-        let dotSize = 0.8;
-
-        if (dist < INFLUENCE) {
-          const force = 1 - dist / INFLUENCE;
-          const angle = Math.atan2(dy, dx);
-          px += Math.cos(angle) * force * PUSH;
-          py += Math.sin(angle) * force * PUSH;
-          dotAlpha = 0.06 + force * 0.6;
-          dotSize = 0.8 + force * 2.8;
-        }
-
-        // Base dot (always visible)
-        ctx.beginPath();
-        ctx.arc(px, py, dotSize, 0, Math.PI * 2);
-
-        // Orange near mouse, slate far away
-        if (dist < INFLUENCE) {
-          ctx.fillStyle = `rgba(249,115,22,${dotAlpha})`;
-        } else {
-          ctx.fillStyle = `rgba(100,116,139,${dotAlpha})`;
-        }
-        ctx.fill();
-
-        // Reactive bright glow lines near mouse
-        if (dist < INFLUENCE * 0.8) {
-          const force = 1 - dist / (INFLUENCE * 0.8);
-
-          // Right neighbor
-          if (col < cols - 1) {
-            const rightIdx = i + 1;
-            if (rightIdx < grid.length) {
-              const nDx = grid[rightIdx].px - mx;
-              const nDy = grid[rightIdx].py - my;
-              const nDist = Math.sqrt(nDx * nDx + nDy * nDy);
-              if (nDist < INFLUENCE * 0.8) {
-                const nForce = 1 - nDist / (INFLUENCE * 0.8);
-                const lineAlpha = Math.min(force, nForce) * 0.25;
+          // Draw connection lines to nearby dots when close to mouse
+          if (dist < INFLUENCE * 0.7) {
+            const force = 1 - dist / (INFLUENCE * 0.7);
+            // Connect to right neighbor
+            if (col < cols - 1) {
+              const nbx = (col + 1) * SPACING;
+              const nby = by;
+              const nWaveX = Math.sin(nby * 0.008 + t * 0.0015) * 3 + Math.cos(nbx * 0.005 + t * 0.001) * 2;
+              const nWaveY = Math.cos(nbx * 0.008 + t * 0.0012) * 3 + Math.sin(nby * 0.005 + t * 0.001) * 2;
+              const npx = nbx + nWaveX;
+              const npy = nby + nWaveY;
+              const ndx = npx - mx;
+              const ndy = npy - my;
+              const ndist = Math.sqrt(ndx * ndx + ndy * ndy);
+              if (ndist < INFLUENCE * 0.7) {
                 ctx.beginPath();
                 ctx.moveTo(px, py);
-                ctx.lineTo(grid[rightIdx].px, grid[rightIdx].py);
-                ctx.strokeStyle = `rgba(249,115,22,${lineAlpha})`;
-                ctx.lineWidth = Math.min(force, nForce) * 2;
+                ctx.lineTo(npx, npy);
+                ctx.strokeStyle = `rgba(249,115,22,${force * 0.12})`;
+                ctx.lineWidth = force * 1.5;
                 ctx.stroke();
               }
             }
-          }
-
-          // Bottom neighbor
-          const bottomIdx = i + cols;
-          if (bottomIdx < grid.length && grid[bottomIdx].col === col) {
-            const nDx = grid[bottomIdx].px - mx;
-            const nDy = grid[bottomIdx].py - my;
-            const nDist = Math.sqrt(nDx * nDx + nDy * nDy);
-            if (nDist < INFLUENCE * 0.8) {
-              const nForce = 1 - nDist / (INFLUENCE * 0.8);
-              const lineAlpha = Math.min(force, nForce) * 0.25;
-              ctx.beginPath();
-              ctx.moveTo(px, py);
-              ctx.lineTo(grid[bottomIdx].px, grid[bottomIdx].py);
-              ctx.strokeStyle = `rgba(249,115,22,${lineAlpha})`;
-              ctx.lineWidth = Math.min(force, nForce) * 2;
-              ctx.stroke();
+            // Connect to bottom neighbor
+            if (row < rows - 1) {
+              const nbx = bx;
+              const nby = (row + 1) * SPACING;
+              const nWaveX = Math.sin(nby * 0.008 + t * 0.0015) * 3 + Math.cos(nbx * 0.005 + t * 0.001) * 2;
+              const nWaveY = Math.cos(nbx * 0.008 + t * 0.0012) * 3 + Math.sin(nby * 0.005 + t * 0.001) * 2;
+              const npx = nbx + nWaveX;
+              const npy = nby + nWaveY;
+              const ndx = npx - mx;
+              const ndy = npy - my;
+              const ndist = Math.sqrt(ndx * ndx + ndy * ndy);
+              if (ndist < INFLUENCE * 0.7) {
+                ctx.beginPath();
+                ctx.moveTo(px, py);
+                ctx.lineTo(npx, npy);
+                ctx.strokeStyle = `rgba(249,115,22,${force * 0.12})`;
+                ctx.lineWidth = force * 1.5;
+                ctx.stroke();
+              }
             }
           }
         }
@@ -697,6 +662,3 @@ export default function LandingPage({ onGetStarted, onSignIn }: { onGetStarted: 
     </div>
   );
 }
-
-
-export {LandingPage}
