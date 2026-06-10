@@ -699,4 +699,4 @@ export default function LandingPage({ onGetStarted, onSignIn }: { onGetStarted: 
 }
 
 
-export LandingPage
+export {LandingPage}
