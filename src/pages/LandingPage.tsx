@@ -90,71 +90,77 @@ function FluidicGrid() {
           const dx = px - mx;
           const dy = py - my;
           const dist = Math.sqrt(dx * dx + dy * dy);
-          let alpha = 0.08;
-          let size = 1;
+          const nearMouse = dist < INFLUENCE;
+          const force = nearMouse ? (1 - dist / INFLUENCE) : 0;
+          let alpha = 0.15;
+          let size = 1.2;
 
-          if (dist < INFLUENCE) {
-            const force = (1 - dist / INFLUENCE);
+          if (nearMouse) {
             const angle = Math.atan2(dy, dx);
             px += Math.cos(angle) * force * PUSH;
             py += Math.sin(angle) * force * PUSH;
-            alpha = 0.08 + force * 0.55;
-            size = 1 + force * 2.5;
+            alpha = 0.15 + force * 0.65;
+            size = 1.2 + force * 2.3;
           }
 
           // Color: orange near mouse, slate far away
-          const r = dist < INFLUENCE ? 249 : 100;
-          const g = dist < INFLUENCE ? 115 : 116;
-          const b = dist < INFLUENCE ? 22 : 139;
+          const r = nearMouse ? 249 : 100;
+          const g = nearMouse ? 115 : 116;
+          const b = nearMouse ? 22 : 139;
 
           ctx.beginPath();
           ctx.arc(px, py, size, 0, Math.PI * 2);
           ctx.fillStyle = `rgba(${r},${g},${b},${alpha})`;
           ctx.fill();
 
-          // Draw connection lines to nearby dots when close to mouse
-          if (dist < INFLUENCE * 0.1) {
-            const force = 1 - dist / (INFLUENCE * 0.1);
-            // Connect to right neighbor
-            if (col < cols - 1) {
-              const nbx = (col + 1) * SPACING;
-              const nby = by;
-              const nWaveX = Math.sin(nby * 0.008 + t * 0.0015) * 3 + Math.cos(nbx * 0.005 + t * 0.001) * 2;
-              const nWaveY = Math.cos(nbx * 0.008 + t * 0.0012) * 3 + Math.sin(nby * 0.005 + t * 0.001) * 2;
-              const npx = nbx + nWaveX;
-              const npy = nby + nWaveY;
-              const ndx = npx - mx;
-              const ndy = npy - my;
-              const ndist = Math.sqrt(ndx * ndx + ndy * ndy);
-              if (ndist < INFLUENCE * 0.1) {
-                ctx.beginPath();
-                ctx.moveTo(px, py);
-                ctx.lineTo(npx, npy);
-                ctx.strokeStyle = `rgba(249,115,22,${force * 0.12})`;
-                ctx.lineWidth = force * 1.5;
-                ctx.stroke();
-              }
-            }
-            // Connect to bottom neighbor
-            if (row < rows - 1) {
-              const nbx = bx;
-              const nby = (row + 1) * SPACING;
-              const nWaveX = Math.sin(nby * 0.008 + t * 0.0015) * 3 + Math.cos(nbx * 0.005 + t * 0.001) * 2;
-              const nWaveY = Math.cos(nbx * 0.008 + t * 0.0012) * 3 + Math.sin(nby * 0.005 + t * 0.001) * 2;
-              const npx = nbx + nWaveX;
-              const npy = nby + nWaveY;
-              const ndx = npx - mx;
-              const ndy = npy - my;
-              const ndist = Math.sqrt(ndx * ndx + ndy * ndy);
-              if (ndist < INFLUENCE * 0.7) {
-                ctx.beginPath();
-                ctx.moveTo(px, py);
-                ctx.lineTo(npx, npy);
-                ctx.strokeStyle = `rgba(249,115,22,${force * 0.12})`;
-                ctx.lineWidth = force * 1.5;
-                ctx.stroke();
-              }
-            }
+          // Draw connection lines — always faintly visible, brighter near mouse
+          // Connect to right neighbor
+          if (col < cols - 1) {
+            const nbx = (col + 1) * SPACING;
+            const nby = by;
+            const nWaveX = Math.sin(nby * 0.008 + t * 0.0015) * 3 + Math.cos(nbx * 0.005 + t * 0.001) * 2;
+            const nWaveY = Math.cos(nbx * 0.008 + t * 0.0012) * 3 + Math.sin(nby * 0.005 + t * 0.001) * 2;
+            const npx = nbx + nWaveX;
+            const npy = nby + nWaveY;
+            const ndx = npx - mx;
+            const ndy = npy - my;
+            const ndist = Math.sqrt(ndx * ndx + ndy * ndy);
+            const nForce = ndist < INFLUENCE ? (1 - ndist / INFLUENCE) : 0;
+            const combinedForce = Math.max(force, nForce);
+            const la = 0.03 + combinedForce * 0.14;
+            const lr = combinedForce > 0.01 ? 249 : 100;
+            const lg = combinedForce > 0.01 ? 115 : 116;
+            const lb = combinedForce > 0.01 ? 22 : 139;
+            ctx.beginPath();
+            ctx.moveTo(px, py);
+            ctx.lineTo(npx, npy);
+            ctx.strokeStyle = `rgba(${lr},${lg},${lb},${la})`;
+            ctx.lineWidth = 0.5 + combinedForce * 1.5;
+            ctx.stroke();
+          }
+          // Connect to bottom neighbor
+          if (row < rows - 1) {
+            const nbx = bx;
+            const nby = (row + 1) * SPACING;
+            const nWaveX = Math.sin(nby * 0.008 + t * 0.0015) * 3 + Math.cos(nbx * 0.005 + t * 0.001) * 2;
+            const nWaveY = Math.cos(nbx * 0.008 + t * 0.0012) * 3 + Math.sin(nby * 0.005 + t * 0.001) * 2;
+            const npx = nbx + nWaveX;
+            const npy = nby + nWaveY;
+            const ndx = npx - mx;
+            const ndy = npy - my;
+            const ndist = Math.sqrt(ndx * ndx + ndy * ndy);
+            const nForce = ndist < INFLUENCE ? (1 - ndist / INFLUENCE) : 0;
+            const combinedForce = Math.max(force, nForce);
+            const la = 0.03 + combinedForce * 0.14;
+            const lr = combinedForce > 0.01 ? 249 : 100;
+            const lg = combinedForce > 0.01 ? 115 : 116;
+            const lb = combinedForce > 0.01 ? 22 : 139;
+            ctx.beginPath();
+            ctx.moveTo(px, py);
+            ctx.lineTo(npx, npy);
+            ctx.strokeStyle = `rgba(${lr},${lg},${lb},${la})`;
+            ctx.lineWidth = 0.5 + combinedForce * 1.5;
+            ctx.stroke();
           }
         }
       }
