@@ -113,8 +113,8 @@ function FluidicGrid() {
           ctx.fill();
 
           // Draw connection lines to nearby dots when close to mouse
-          if (dist < INFLUENCE * 0.7) {
-            const force = 1 - dist / (INFLUENCE * 0.7);
+          if (dist < INFLUENCE * 0.1) {
+            const force = 1 - dist / (INFLUENCE * 0.1);
             // Connect to right neighbor
             if (col < cols - 1) {
               const nbx = (col + 1) * SPACING;
@@ -126,7 +126,7 @@ function FluidicGrid() {
               const ndx = npx - mx;
               const ndy = npy - my;
               const ndist = Math.sqrt(ndx * ndx + ndy * ndy);
-              if (ndist < INFLUENCE * 0.7) {
+              if (ndist < INFLUENCE * 0.1) {
                 ctx.beginPath();
                 ctx.moveTo(px, py);
                 ctx.lineTo(npx, npy);
