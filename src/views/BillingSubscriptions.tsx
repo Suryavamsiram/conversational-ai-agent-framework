@@ -72,14 +72,14 @@ function CheckoutModal({ plan, onClose }: { plan: BillingPlan; onClose: () => vo
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50" onClick={onClose}>
-      <div className="bg-slate-900 border border-slate-700/50 rounded-xl w-full max-w-md p-6 shadow-2xl" onClick={e => e.stopPropagation()}>
+      <div className="glass-card border-emerald-500/15 w-full max-w-md p-6 shadow-2xl shadow-black/40" onClick={e => e.stopPropagation()}>
         {step === 'form' && (
           <>
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-lg font-semibold text-slate-100">Subscribe to {plan.name}</h3>
-              <button onClick={onClose} className="text-slate-500 hover:text-slate-300"><X className="w-5 h-5" /></button>
+              <button onClick={onClose} className="text-slate-500 hover:text-slate-300 transition-colors"><X className="w-5 h-5" /></button>
             </div>
-            <div className="mb-6 p-4 bg-slate-800/50 rounded-lg border border-slate-700/40">
+            <div className="mb-6 p-4 glass-card-sm">
               <div className="flex items-baseline gap-1 mb-1">
                 <span className="text-2xl font-bold text-emerald-400">${plan.price}</span>
                 <span className="text-sm text-slate-500">/month</span>
@@ -92,22 +92,22 @@ function CheckoutModal({ plan, onClose }: { plan: BillingPlan; onClose: () => vo
               <div>
                 <label className="block text-sm font-medium text-slate-300 mb-1.5">Card Number</label>
                 <input type="text" placeholder="4242 4242 4242 4242"
-                  className="w-full px-3 py-2.5 bg-slate-800 border border-slate-600/50 rounded-lg text-slate-200 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-sm" />
+                  className="w-full px-3 py-2.5 bg-white/5 border border-white/10 rounded-xl text-slate-200 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500/40 text-sm" />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-sm font-medium text-slate-300 mb-1.5">Expiry</label>
                   <input type="text" placeholder="12/27"
-                    className="w-full px-3 py-2.5 bg-slate-800 border border-slate-600/50 rounded-lg text-slate-200 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-sm" />
+                    className="w-full px-3 py-2.5 bg-white/5 border border-white/10 rounded-xl text-slate-200 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500/40 text-sm" />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-300 mb-1.5">CVC</label>
                   <input type="text" placeholder="123"
-                    className="w-full px-3 py-2.5 bg-slate-800 border border-slate-600/50 rounded-lg text-slate-200 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-sm" />
+                    className="w-full px-3 py-2.5 bg-white/5 border border-white/10 rounded-xl text-slate-200 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500/40 text-sm" />
                 </div>
               </div>
               <button type="submit"
-                className="w-full flex items-center justify-center gap-2 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-medium rounded-lg transition-all text-sm">
+                className="w-full flex items-center justify-center gap-2 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-medium rounded-xl transition-all text-sm shadow-lg shadow-emerald-600/20">
                 <CreditCard className="w-4 h-4" /> Pay ${plan.price}/month
               </button>
             </form>
@@ -121,14 +121,14 @@ function CheckoutModal({ plan, onClose }: { plan: BillingPlan; onClose: () => vo
         )}
         {step === 'success' && (
           <div className="py-12 flex flex-col items-center gap-4">
-            <div className="w-12 h-12 rounded-full bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center">
+            <div className="w-12 h-12 rounded-full bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center inner-glow-emerald">
               <Check className="w-6 h-6 text-emerald-400" />
             </div>
             <div className="text-center">
               <p className="text-lg font-semibold text-slate-100">Subscription Activated</p>
               <p className="text-sm text-slate-400 mt-1">Your {plan.name} plan is now active.</p>
             </div>
-            <button onClick={onClose} className="mt-4 px-6 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition-all text-sm border border-slate-700/50">Done</button>
+            <button onClick={onClose} className="mt-4 px-6 py-2 bg-white/5 hover:bg-white/10 text-slate-300 rounded-xl transition-all text-sm border border-white/10">Done</button>
           </div>
         )}
       </div>
@@ -161,7 +161,7 @@ export default function BillingSubscriptions() {
         </div>
 
         {/* Current plan indicator */}
-        <div className="mb-6 p-4 bg-slate-900/60 border border-slate-700/40 rounded-xl flex items-center gap-3">
+        <div className="mb-6 p-4 glass-card inner-glow-emerald flex items-center gap-3">
           <Shield className="w-5 h-5 text-emerald-400" />
           <div className="flex-1">
             <span className="text-sm text-slate-400">Current plan: </span>
@@ -171,7 +171,7 @@ export default function BillingSubscriptions() {
 
         {/* Usage Summary Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-          <div className="bg-slate-900/60 border border-slate-700/40 rounded-xl p-4">
+          <div className="glass-card metric-accent-bar p-4">
             <div className="flex items-center gap-2 mb-2">
               <TrendingUp className="w-4 h-4 text-emerald-400" />
               <span className="text-xs font-medium text-slate-500 uppercase tracking-wider">Total Spend</span>
@@ -179,7 +179,7 @@ export default function BillingSubscriptions() {
             <div className="text-2xl font-bold text-slate-100 font-mono">${totalSpend.toFixed(2)}</div>
             <div className="text-xs text-slate-500 mt-1">${paidSpend.toFixed(2)} paid / ${pendingSpend.toFixed(2)} pending</div>
           </div>
-          <div className="bg-slate-900/60 border border-slate-700/40 rounded-xl p-4">
+          <div className="glass-card metric-accent-bar p-4">
             <div className="flex items-center gap-2 mb-2">
               <Zap className="w-4 h-4 text-amber-400" />
               <span className="text-xs font-medium text-slate-500 uppercase tracking-wider">Token Usage</span>
@@ -187,9 +187,9 @@ export default function BillingSubscriptions() {
             <div className="text-2xl font-bold text-slate-100 font-mono">{(tokenUsageTotal / 1000).toFixed(0)}K</div>
             <div className="text-xs text-slate-500 mt-1">est. ${estimatedCostUsd.toFixed(2)} cost</div>
           </div>
-          <div className="bg-slate-900/60 border border-slate-700/40 rounded-xl p-4">
+          <div className="glass-card metric-accent-bar p-4">
             <div className="flex items-center gap-2 mb-2">
-              <Clock className="w-4 h-4 text-indigo-400" />
+              <Clock className="w-4 h-4 text-cyan-400" />
               <span className="text-xs font-medium text-slate-500 uppercase tracking-wider">Billing Period</span>
             </div>
             <div className="text-2xl font-bold text-slate-100">Jun 2026</div>
@@ -204,15 +204,15 @@ export default function BillingSubscriptions() {
             const isCurrent = plan.id === currentTier;
             return (
               <div key={plan.id}
-                className={`relative rounded-xl border p-6 transition-all duration-200 ${
-                  plan.highlighted ? 'bg-slate-900/80 border-emerald-500/40 shadow-lg shadow-emerald-500/5' : 'bg-slate-900/40 border-slate-700/40'
+                className={`glass-card relative p-6 transition-all duration-200 ${
+                  plan.highlighted ? 'inner-glow-emerald' : ''
                 }`}>
                 {plan.highlighted && (
                   <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 bg-emerald-600 text-white text-xs font-semibold rounded-full shadow-lg shadow-emerald-600/20">Most Popular</div>
                 )}
                 <div className="flex items-center gap-2.5 mb-4">
-                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-                    plan.highlighted ? 'bg-emerald-500/15 border border-emerald-500/25' : 'bg-slate-800 border border-slate-700/50'
+                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${
+                    plan.highlighted ? 'bg-emerald-500/15 border border-emerald-500/25' : 'bg-white/5 border border-white/10'
                   }`}>
                     <PlanIcon className={`w-4 h-4 ${plan.highlighted ? 'text-emerald-400' : 'text-slate-400'}`} />
                   </div>
@@ -240,10 +240,10 @@ export default function BillingSubscriptions() {
                   <p className="text-xs text-slate-600 mb-4">${plan.overageRate.toFixed(2)} / min overage after {plan.voiceMinutes.toLocaleString()} minutes</p>
                 )}
                 <button onClick={() => !isCurrent && setCheckoutPlan(plan)} disabled={isCurrent}
-                  className={`w-full py-2.5 rounded-lg text-sm font-medium transition-all ${
-                    isCurrent ? 'bg-slate-800 text-slate-600 cursor-default border border-slate-700/30'
+                  className={`w-full py-2.5 rounded-xl text-sm font-medium transition-all ${
+                    isCurrent ? 'bg-white/5 text-slate-600 cursor-default border border-white/[0.06]'
                     : plan.highlighted ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-600/20'
-                    : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700/50'
+                    : 'bg-white/5 hover:bg-white/10 text-slate-300 border border-white/10'
                   }`}>
                   {isCurrent ? 'Current Plan' : plan.ctaLabel}
                 </button>
@@ -253,10 +253,10 @@ export default function BillingSubscriptions() {
         </div>
 
         {/* Historical Invoices */}
-        <div className="bg-slate-900/60 border border-slate-700/40 rounded-xl overflow-hidden">
-          <div className="px-5 py-3 border-b border-slate-700/40 flex items-center justify-between">
+        <div className="glass-card overflow-hidden">
+          <div className="px-5 py-3 border-b border-white/[0.06] flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Receipt className="w-4 h-4 text-emerald-400" />
+              <Receipt className="w-4 h-4 text-teal-400" />
               <span className="text-sm font-medium text-slate-200">Invoices</span>
             </div>
             <button onClick={() => setShowInvoices(!showInvoices)}
@@ -268,7 +268,7 @@ export default function BillingSubscriptions() {
           {showInvoices && (
             <table className="w-full">
               <thead>
-                <tr className="text-xs text-slate-500 uppercase tracking-wider border-b border-slate-700/30">
+                <tr className="text-xs text-slate-500 uppercase tracking-wider border-b border-white/[0.06]">
                   <th className="text-left px-5 py-2.5 font-medium">Date</th>
                   <th className="text-left px-5 py-2.5 font-medium">Description</th>
                   <th className="text-left px-5 py-2.5 font-medium">Qty</th>
@@ -279,14 +279,14 @@ export default function BillingSubscriptions() {
               </thead>
               <tbody>
                 {invoices.map(inv => (
-                  <tr key={inv.id} className="border-b border-slate-800/50 hover:bg-slate-800/20 transition-colors">
+                  <tr key={inv.id} className="border-b border-white/[0.04] hover:bg-white/[0.02] transition-colors">
                     <td className="px-5 py-3 text-sm text-slate-400 font-mono">{inv.date}</td>
                     <td className="px-5 py-3 text-sm text-slate-300">{inv.description}</td>
                     <td className="px-5 py-3 text-sm text-slate-400 font-mono">{inv.quantity.toLocaleString()}</td>
                     <td className="px-5 py-3 text-sm text-slate-400 font-mono">${inv.unitPrice.toFixed(inv.unitPrice < 1 ? 5 : 2)}</td>
                     <td className="px-5 py-3 text-sm text-slate-200 font-mono">${inv.total.toFixed(2)}</td>
                     <td className="px-5 py-3">
-                      <span className={`text-xs font-medium px-2 py-1 rounded-md ${
+                      <span className={`text-xs font-medium px-2 py-1 rounded-lg ${
                         inv.status === 'paid' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
                         : inv.status === 'pending' ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
                         : 'bg-red-500/10 text-red-400 border border-red-500/20'

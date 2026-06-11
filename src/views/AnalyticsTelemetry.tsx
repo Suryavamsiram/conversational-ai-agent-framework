@@ -132,10 +132,10 @@ function MetricCard({ icon: Icon, iconBg, iconColor, label, sublabel, value, uni
   deltaSuffix: string;
 }) {
   return (
-    <div className="bg-slate-900/60 border border-slate-700/40 rounded-xl p-5">
+    <div className="glass-card metric-accent-bar p-5">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
-          <div className={`w-8 h-8 rounded-lg ${iconBg} border flex items-center justify-center`}>
+          <div className={`w-9 h-9 rounded-xl ${iconBg} border flex items-center justify-center`}>
             <Icon className={`w-4 h-4 ${iconColor}`} />
           </div>
           <div>
@@ -178,10 +178,10 @@ export default function AnalyticsTelemetry() {
         {/* Top Row: 6 Dense Metric Cards */}
         <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-5">
           {/* P50 Latency */}
-          <div className="bg-slate-900/60 border border-slate-700/40 rounded-xl p-5">
+          <div className="glass-card metric-accent-bar p-5">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
-                <div className={`w-8 h-8 rounded-lg ${telemetry.p50LatencyMs < 1500 ? 'bg-emerald-500/10 border-emerald-500/20' : telemetry.p50LatencyMs < 2000 ? 'bg-amber-500/10 border-amber-500/20' : 'bg-red-500/10 border-red-500/20'} border flex items-center justify-center`}>
+                <div className={`w-9 h-9 rounded-xl ${telemetry.p50LatencyMs < 1500 ? 'bg-emerald-500/10 border-emerald-500/20' : telemetry.p50LatencyMs < 2000 ? 'bg-amber-500/10 border-amber-500/20' : 'bg-red-500/10 border-red-500/20'} border flex items-center justify-center`}>
                   <Clock className={`w-4 h-4 ${telemetry.p50LatencyMs < 1500 ? 'text-emerald-400' : telemetry.p50LatencyMs < 2000 ? 'text-amber-400' : 'text-red-400'}`} />
                 </div>
                 <div>
@@ -202,15 +202,15 @@ export default function AnalyticsTelemetry() {
 
           {/* Concurrency */}
           <MetricCard
-            icon={Cpu} iconBg="bg-indigo-500/10" iconColor="text-indigo-400"
+            icon={Cpu} iconBg="bg-cyan-500/10" iconColor="text-cyan-400"
             label="Concurrent Pipelines" sublabel="Active streaming sessions"
-            value={activeConcurrentPipelines.toString()} delta={0} deltaColor="#818cf8" deltaSuffix=""
+            value={activeConcurrentPipelines.toString()} delta={0} deltaColor="#22d3ee" deltaSuffix=""
           />
 
           {/* Jitter */}
-          <div className="bg-slate-900/60 border border-slate-700/40 rounded-xl p-5">
+          <div className="glass-card metric-accent-bar p-5">
             <div className="flex items-center gap-2 mb-4">
-              <div className={`w-8 h-8 rounded-lg ${jitterMs < 20 ? 'bg-emerald-500/10 border-emerald-500/20' : 'bg-amber-500/10 border-amber-500/20'} border flex items-center justify-center`}>
+              <div className={`w-9 h-9 rounded-xl ${jitterMs < 20 ? 'bg-emerald-500/10 border-emerald-500/20' : 'bg-amber-500/10 border-amber-500/20'} border flex items-center justify-center`}>
                 <Wifi className={`w-4 h-4 ${jitterMs < 20 ? 'text-emerald-400' : 'text-amber-400'}`} />
               </div>
               <div>
@@ -223,7 +223,7 @@ export default function AnalyticsTelemetry() {
                 <span className={`text-2xl font-bold font-mono ${jitterMs < 20 ? 'text-emerald-400' : 'text-amber-400'}`}>{jitterMs.toFixed(1)}</span>
                 <span className="text-sm text-slate-500 ml-1">ms jitter</span>
               </div>
-              <div className="w-px h-6 bg-slate-700" />
+              <div className="w-px h-6 bg-white/10" />
               <div>
                 <span className={`text-2xl font-bold font-mono ${packetLossPercent < 1 ? 'text-emerald-400' : 'text-amber-400'}`}>{packetLossPercent.toFixed(1)}</span>
                 <span className="text-sm text-slate-500 ml-1">% loss</span>
@@ -232,11 +232,11 @@ export default function AnalyticsTelemetry() {
           </div>
 
           {/* Audio Throughput */}
-          <div className="bg-slate-900/60 border border-slate-700/40 rounded-xl p-5">
+          <div className="glass-card metric-accent-bar p-5">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-indigo-500/10 border-indigo-500/20 border flex items-center justify-center">
-                  <Activity className="w-4 h-4 text-indigo-400" />
+                <div className="w-9 h-9 rounded-xl bg-teal-500/10 border-teal-500/20 border flex items-center justify-center">
+                  <Activity className="w-4 h-4 text-teal-400" />
                 </div>
                 <div>
                   <div className="text-sm font-medium text-slate-200">Audio Throughput</div>
@@ -244,20 +244,20 @@ export default function AnalyticsTelemetry() {
                 </div>
               </div>
               <div className="flex items-center gap-1 text-xs">
-                {throughputDelta >= 0 ? <TrendingUp className="w-3.5 h-3.5 text-indigo-400" /> : <TrendingDown className="w-3.5 h-3.5 text-amber-400" />}
-                <span className={throughputDelta >= 0 ? 'text-indigo-400' : 'text-amber-400'}>{Math.abs(throughputDelta).toFixed(0)} kbps</span>
+                {throughputDelta >= 0 ? <TrendingUp className="w-3.5 h-3.5 text-teal-400" /> : <TrendingDown className="w-3.5 h-3.5 text-amber-400" />}
+                <span className={throughputDelta >= 0 ? 'text-teal-400' : 'text-amber-400'}>{Math.abs(throughputDelta).toFixed(0)} kbps</span>
               </div>
             </div>
-            <div className="text-3xl font-bold text-indigo-400 mb-4 font-mono">
+            <div className="text-3xl font-bold text-teal-400 mb-4 font-mono">
               {telemetry.audioThroughputKbps.toFixed(0)} <span className="text-lg">kbps</span>
             </div>
-            <MiniLineChart data={telemetry.throughputHistory} maxVal={500} color="#818cf8" />
+            <MiniLineChart data={telemetry.throughputHistory} maxVal={500} color="#2dd4bf" />
           </div>
 
           {/* Token Usage & Cost */}
-          <div className="bg-slate-900/60 border border-slate-700/40 rounded-xl p-5">
+          <div className="glass-card metric-accent-bar p-5">
             <div className="flex items-center gap-2 mb-4">
-              <div className="w-8 h-8 rounded-lg bg-amber-500/10 border-amber-500/20 border flex items-center justify-center">
+              <div className="w-9 h-9 rounded-xl bg-amber-500/10 border-amber-500/20 border flex items-center justify-center">
                 <DollarSign className="w-4 h-4 text-amber-400" />
               </div>
               <div>
@@ -270,7 +270,7 @@ export default function AnalyticsTelemetry() {
                 <span className="text-xl font-bold font-mono text-amber-400">{(tokenUsageTotal / 1000).toFixed(0)}K</span>
                 <span className="text-xs text-slate-500 ml-1">tokens</span>
               </div>
-              <div className="w-px h-5 bg-slate-700" />
+              <div className="w-px h-5 bg-white/10" />
               <div>
                 <span className="text-xl font-bold font-mono text-emerald-400">${estimatedCostUsd.toFixed(2)}</span>
                 <span className="text-xs text-slate-500 ml-1">est. cost</span>
@@ -284,9 +284,9 @@ export default function AnalyticsTelemetry() {
           </div>
 
           {/* Failover Ratio */}
-          <div className="bg-slate-900/60 border border-slate-700/40 rounded-xl p-5">
+          <div className="glass-card metric-accent-bar p-5">
             <div className="flex items-center gap-2 mb-4">
-              <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border-indigo-500/20 border flex items-center justify-center">
+              <div className="w-9 h-9 rounded-xl bg-emerald-500/10 border-emerald-500/20 border flex items-center justify-center">
                 <ShieldCheck className="w-4 h-4 text-emerald-400" />
               </div>
               <div>

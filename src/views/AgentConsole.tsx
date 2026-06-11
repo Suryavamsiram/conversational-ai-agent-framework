@@ -16,7 +16,7 @@ const PHASE_INDICATOR: Record<CallLifecyclePhase, { label: string; color: string
   handshake: { label: 'Handshake', color: 'text-amber-400', icon: Loader2 },
   user_speaking: { label: 'User Speaking', color: 'text-emerald-400', icon: User },
   model_processing: { label: 'Processing', color: 'text-amber-400', icon: Brain },
-  agent_speaking: { label: 'Agent Speaking', color: 'text-indigo-400', icon: Bot },
+  agent_speaking: { label: 'Agent Speaking', color: 'text-cyan-400', icon: Bot },
   disconnecting: { label: 'Disconnecting', color: 'text-red-400', icon: WifiOff },
   disconnected: { label: 'Disconnected', color: 'text-slate-500', icon: WifiOff },
 };
@@ -39,20 +39,20 @@ function TranscriptPanel() {
       {session.transcripts.map(entry => (
         <div
           key={entry.id}
-          className={`animate-fade-in-up rounded-lg p-3 text-sm ${
+          className={`animate-fade-in-up rounded-xl p-3.5 text-sm ${
             entry.role === 'user'
-              ? 'bg-slate-800/60 border border-slate-700/40 ml-4'
-              : 'bg-indigo-500/8 border border-indigo-500/20 mr-4'
+              ? 'glass-card-sm border-emerald-500/15 ml-4'
+              : 'glass-card-sm border-cyan-500/15 mr-4'
           }`}
         >
-          <div className="flex items-center gap-2 mb-1">
+          <div className="flex items-center gap-2 mb-1.5">
             {entry.role === 'user' ? (
               <User className="w-3.5 h-3.5 text-emerald-400" />
             ) : (
-              <Bot className="w-3.5 h-3.5 text-indigo-400" />
+              <Bot className="w-3.5 h-3.5 text-cyan-400" />
             )}
             <span className={`text-[10px] font-semibold uppercase tracking-wider ${
-              entry.role === 'user' ? 'text-emerald-400' : 'text-indigo-400'
+              entry.role === 'user' ? 'text-emerald-400' : 'text-cyan-400'
             }`}>
               {entry.role === 'user' ? 'User' : 'Voice Agent'}
             </span>
@@ -64,7 +64,7 @@ function TranscriptPanel() {
             )}
           </div>
           <p className={`leading-relaxed ${
-            entry.role === 'user' ? 'text-slate-300' : 'text-indigo-200'
+            entry.role === 'user' ? 'text-slate-300' : 'text-cyan-200'
           } ${entry.isStreaming ? 'opacity-70' : ''}`}>
             {entry.text}
           </p>
@@ -118,7 +118,7 @@ export default function AgentConsole() {
   return (
     <div className="flex-1 flex flex-col h-full overflow-hidden">
       {/* Header Bar */}
-      <div className="flex items-center justify-between px-6 py-3 border-b border-slate-700/40 bg-slate-900/50">
+      <div className="flex items-center justify-between px-6 py-3 border-b border-white/[0.06] bg-slate-900/60 backdrop-blur-md">
         <div className="flex items-center gap-4">
           <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs font-medium ${statusCfg.bg} ${statusCfg.color}`}>
             {session.status === 'connecting' ? (
@@ -128,7 +128,6 @@ export default function AgentConsole() {
             )}
             {statusCfg.label}
           </div>
-          {/* Lifecycle Phase Indicator */}
           {isActive && (
             <div className={`inline-flex items-center gap-1.5 text-xs font-medium ${phaseCfg.color}`}>
               <PhaseIcon className={`w-3.5 h-3.5 ${lifecyclePhase === 'handshake' || lifecyclePhase === 'model_processing' ? 'animate-pulse' : ''}`} />
@@ -143,12 +142,12 @@ export default function AgentConsole() {
           )}
         </div>
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 bg-slate-800/80 rounded-lg p-0.5 border border-slate-700/40">
+          <div className="flex items-center gap-1 glass-card-sm p-0.5">
             <button
               onClick={() => switchBackend('gemini-3.1-pro-preview')}
-              className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
                 session.backend === 'gemini-3.1-pro-preview'
-                  ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
+                  ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 inner-glow-emerald'
                   : 'text-slate-500 hover:text-slate-300 border border-transparent'
               }`}
             >
@@ -156,7 +155,7 @@ export default function AgentConsole() {
             </button>
             <button
               onClick={() => switchBackend('gemini-2.5-flash-fallback')}
-              className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
                 session.backend === 'gemini-2.5-flash-fallback'
                   ? 'bg-amber-500/15 text-amber-400 border border-amber-500/30'
                   : 'text-slate-500 hover:text-slate-300 border border-transparent'
@@ -171,36 +170,36 @@ export default function AgentConsole() {
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Canvas Audio Visualizer */}
-        <div className="relative border-b border-slate-700/40 bg-slate-950/50">
+        <div className="relative border-b border-white/[0.06] bg-slate-950/50">
           {isActive ? (
             <AudioVisualizer isActive={isActive} phase={lifecyclePhase} />
           ) : (
             <div className="h-40 flex items-center justify-center">
               <button
                 onClick={connectSession}
-                className="flex items-center gap-3 px-6 py-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20 transition-all duration-200 group"
+                className="flex items-center gap-3 px-7 py-3.5 rounded-xl glass-card border-emerald-500/25 text-emerald-400 hover:border-emerald-500/40 transition-all duration-300 group inner-glow-emerald"
               >
                 <Mic className="w-5 h-5 group-hover:scale-110 transition-transform" />
-                <span className="text-sm font-medium">Click to Connect Mic</span>
+                <span className="text-sm font-semibold">Click to Connect Mic</span>
               </button>
             </div>
           )}
         </div>
 
         {/* Control Core */}
-        <div className="flex items-center gap-3 px-6 py-3 border-b border-slate-700/40 bg-slate-900/30">
+        <div className="flex items-center gap-3 px-6 py-3 border-b border-white/[0.06] bg-slate-900/40">
           {isActive ? (
             <>
               <button
                 onClick={manualInterrupt}
-                className="flex items-center gap-2 px-5 py-2.5 bg-red-600 hover:bg-red-500 text-white font-semibold rounded-lg transition-all duration-150 shadow-lg shadow-red-600/20 active:scale-95"
+                className="flex items-center gap-2 px-5 py-2.5 bg-red-600/90 hover:bg-red-500 text-white font-semibold rounded-xl transition-all duration-150 shadow-lg shadow-red-600/20 active:scale-95"
               >
                 <AlertOctagon className="w-4 h-4" />
                 MANUAL INTERRUPT
               </button>
               <button
                 onClick={disconnectSession}
-                className="flex items-center gap-2 px-4 py-2.5 bg-slate-800 hover:bg-slate-700 border border-slate-600/50 text-slate-300 rounded-lg transition-all text-sm"
+                className="flex items-center gap-2 px-4 py-2.5 glass-card-sm hover:bg-slate-800/80 text-slate-300 transition-all text-sm"
               >
                 <MicOff className="w-4 h-4" />
                 Disconnect
@@ -219,9 +218,9 @@ export default function AgentConsole() {
         {/* Dual-Panel Caption Streamer */}
         <div className="flex-1 flex min-h-0">
           {/* Left: Transcripts */}
-          <div className="flex-1 border-r border-slate-700/40 flex flex-col min-h-0">
-            <div className="px-4 py-2 border-b border-slate-700/30 bg-slate-900/30">
-              <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">Live Transcription</span>
+          <div className="flex-1 border-r border-white/[0.06] flex flex-col min-h-0">
+            <div className="px-4 py-2.5 border-b border-white/[0.06] bg-slate-900/40">
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Live Transcription</span>
             </div>
             <div className="flex-1 min-h-0">
               <TranscriptPanel />
@@ -230,8 +229,8 @@ export default function AgentConsole() {
 
           {/* Right: Dev Console */}
           <div className="w-[420px] flex flex-col min-h-0">
-            <div className="px-4 py-2 border-b border-slate-700/30 bg-slate-900/30">
-              <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">WebSocket Frames</span>
+            <div className="px-4 py-2.5 border-b border-white/[0.06] bg-slate-900/40">
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">WebSocket Frames</span>
             </div>
             <div className="flex-1 min-h-0 bg-slate-950/30">
               <DevConsole />

@@ -27,23 +27,23 @@ export default function PhoneRouting() {
             <p className="text-sm text-slate-500">Manage virtual phone lines and wire them to agent profiles</p>
           </div>
           <button
-            className="flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-medium rounded-lg transition-all text-sm shadow-lg shadow-emerald-600/20"
+            className="flex items-center gap-2 px-4 py-2.5 bg-teal-600 hover:bg-teal-500 text-white font-medium rounded-xl transition-all text-sm shadow-lg shadow-teal-600/20"
           >
             <Plus className="w-4 h-4" /> Buy Number
           </button>
         </div>
 
         {/* Active Numbers */}
-        <div className="bg-slate-900/60 border border-slate-700/40 rounded-xl overflow-hidden mb-6">
-          <div className="px-5 py-3 border-b border-slate-700/40 flex items-center gap-2">
-            <Phone className="w-4 h-4 text-emerald-400" />
+        <div className="glass-card overflow-hidden mb-6">
+          <div className="px-5 py-3 border-b border-white/[0.06] flex items-center gap-2">
+            <Phone className="w-4 h-4 text-teal-400" />
             <span className="text-sm font-medium text-slate-200">Active Lines</span>
             <span className="text-xs text-slate-600 ml-1">({activeRoutes.length})</span>
           </div>
 
           <table className="w-full">
             <thead>
-              <tr className="text-xs text-slate-500 uppercase tracking-wider border-b border-slate-700/30">
+              <tr className="text-xs text-slate-500 uppercase tracking-wider border-b border-white/[0.06]">
                 <th className="text-left px-5 py-2.5 font-medium">Number</th>
                 <th className="text-left px-5 py-2.5 font-medium">Country</th>
                 <th className="text-left px-5 py-2.5 font-medium">Assigned Agent</th>
@@ -54,7 +54,7 @@ export default function PhoneRouting() {
             </thead>
             <tbody>
               {activeRoutes.map(route => (
-                <tr key={route.id} className="border-b border-slate-800/50 hover:bg-slate-800/20 transition-colors">
+                <tr key={route.id} className="border-b border-white/[0.04] hover:bg-white/[0.02] transition-colors">
                   <td className="px-5 py-3">
                     <code className="text-sm text-slate-200 font-mono">{route.phoneNumber}</code>
                   </td>
@@ -75,7 +75,7 @@ export default function PhoneRouting() {
                           setAssigningId(null);
                         }}
                         onBlur={() => setAssigningId(null)}
-                        className="px-3 py-1.5 bg-slate-800 border border-slate-600/50 rounded-lg text-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+                        className="px-3 py-1.5 bg-white/5 border border-white/10 rounded-lg text-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/50 focus:border-teal-500/50"
                       >
                         <option value="">-- Unassign --</option>
                         {agents.filter(a => a.isActive).map(a => (
@@ -84,7 +84,7 @@ export default function PhoneRouting() {
                       </select>
                     ) : route.assignedAgentName ? (
                       <button onClick={() => setAssigningId(route.id)}
-                        className="flex items-center gap-1.5 text-sm text-emerald-400 hover:text-emerald-300 transition-colors">
+                        className="flex items-center gap-1.5 text-sm text-teal-400 hover:text-teal-300 transition-colors">
                         <Bot className="w-3.5 h-3.5" />
                         {route.assignedAgentName}
                       </button>
@@ -114,20 +114,20 @@ export default function PhoneRouting() {
 
         {/* Inactive / Pending Numbers */}
         {inactiveRoutes.length > 0 && (
-          <div className="bg-slate-900/30 border border-slate-700/30 rounded-xl overflow-hidden">
-            <div className="px-5 py-3 border-b border-slate-700/30 flex items-center gap-2">
+          <div className="glass-card-sm overflow-hidden opacity-60">
+            <div className="px-5 py-3 border-b border-white/[0.06] flex items-center gap-2">
               <span className="text-sm font-medium text-slate-500">Inactive / Pending</span>
               <span className="text-xs text-slate-600 ml-1">({inactiveRoutes.length})</span>
             </div>
             <table className="w-full">
               <tbody>
                 {inactiveRoutes.map(route => (
-                  <tr key={route.id} className="border-b border-slate-800/30 opacity-60 hover:opacity-80 transition-opacity">
+                  <tr key={route.id} className="border-b border-white/[0.04]">
                     <td className="px-5 py-2.5 text-sm text-slate-400 font-mono">{route.phoneNumber}</td>
                     <td className="px-5 py-2.5 text-sm text-slate-400">{COUNTRY_FLAGS[route.country] || ''} {route.country}</td>
                     <td className="px-5 py-2.5">
-                      <span className={`text-xs px-2 py-1 rounded-md ${
-                        route.status === 'pending' ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' : 'bg-slate-800 text-slate-500 border border-slate-700/50'
+                      <span className={`text-xs px-2 py-1 rounded-lg ${
+                        route.status === 'pending' ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' : 'bg-white/5 text-slate-500 border border-white/10'
                       }`}>
                         {route.status}
                       </span>

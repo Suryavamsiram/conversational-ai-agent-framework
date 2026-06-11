@@ -64,12 +64,8 @@ export default function OnboardingPage({ onBack }: { onBack: () => void }) {
 
   return (
     <div className="min-h-screen bg-slate-950 relative overflow-hidden flex items-center justify-center">
-      {/* Subtle dot grid */}
-      <div className="absolute inset-0 opacity-[0.025]" style={{
-        backgroundImage: 'radial-gradient(circle, #fb923c 1px, transparent 1px)',
-        backgroundSize: '32px 32px',
-      }} />
-
+      {/* Grid background */}
+      <div className="absolute inset-0 dashboard-grid-bg" />
       {/* Radial glow */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] rounded-full pointer-events-none"
         style={{ background: 'radial-gradient(circle, rgba(249,115,22,0.06) 0%, transparent 70%)' }} />
@@ -78,7 +74,7 @@ export default function OnboardingPage({ onBack }: { onBack: () => void }) {
         {/* Logo + Step indicator */}
         <div className="text-center mb-10">
           <div className="inline-flex items-center gap-3 mb-8">
-            <div className="w-10 h-10 rounded-xl bg-orange-500/20 border border-orange-500/30 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-500/20 to-orange-600/10 border border-orange-500/30 flex items-center justify-center animate-glow-pulse">
               <Radio className="w-5 h-5 text-orange-400" />
             </div>
             <span className="text-2xl font-bold text-slate-100 tracking-tight">SwarmVoice<span className="text-orange-400">.ai</span></span>
@@ -94,7 +90,7 @@ export default function OnboardingPage({ onBack }: { onBack: () => void }) {
                   <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300 ${
                     i < stepIdx ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20' :
                     i === stepIdx ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/20' :
-                    'bg-slate-800 text-slate-500 border border-slate-700/50'
+                    'bg-white/5 text-slate-500 border border-white/10'
                   }`}>
                     {i < stepIdx ? <Check className="w-4 h-4" /> : i + 1}
                   </div>
@@ -106,7 +102,7 @@ export default function OnboardingPage({ onBack }: { onBack: () => void }) {
                 </div>
                 {i < 3 && (
                   <div className={`w-6 h-px transition-colors duration-300 ${
-                    i < stepIdx ? 'bg-emerald-500' : 'bg-slate-700'
+                    i < stepIdx ? 'bg-emerald-500' : 'bg-white/10'
                   }`} />
                 )}
               </div>
@@ -114,8 +110,8 @@ export default function OnboardingPage({ onBack }: { onBack: () => void }) {
           </div>
         </div>
 
-        {/* Card container with consistent height transition */}
-        <div className="bg-slate-900/80 backdrop-blur-xl border border-white/[0.06] rounded-2xl overflow-hidden">
+        {/* Card container */}
+        <div className="glass-card overflow-hidden">
           {/* Step: Signup */}
           {step === 'signup' && (
             <div className="p-8">
@@ -162,7 +158,7 @@ export default function OnboardingPage({ onBack }: { onBack: () => void }) {
                 </button>
               </form>
 
-              <div className="mt-6 pt-6 border-t border-white/5 flex items-center justify-between">
+              <div className="mt-6 pt-6 border-t border-white/[0.06] flex items-center justify-between">
                 <button onClick={onBack} className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-300 transition-colors">
                   <ArrowLeft className="w-3.5 h-3.5" /> Back
                 </button>
@@ -184,7 +180,7 @@ export default function OnboardingPage({ onBack }: { onBack: () => void }) {
                   <button key={plan.id} onClick={() => setSelectedPlan(plan.id)}
                     className={`w-full relative flex items-center gap-4 p-5 rounded-xl border text-left transition-all duration-200 ${
                       selectedPlan === plan.id
-                        ? 'bg-orange-500/[0.08] border-orange-500/25 ring-1 ring-orange-500/15'
+                        ? 'glass-card border-orange-500/25 inner-glow-orange'
                         : 'bg-white/[0.02] border-white/[0.06] hover:border-white/[0.12]'
                     }`}>
                     {plan.badge && selectedPlan === plan.id && (
@@ -228,7 +224,7 @@ export default function OnboardingPage({ onBack }: { onBack: () => void }) {
               </div>
 
               {/* Order summary */}
-              <div className="mb-6 p-4 bg-white/[0.02] border border-white/[0.06] rounded-xl">
+              <div className="mb-6 p-4 glass-card-sm">
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-slate-300">{PLANS.find(p => p.id === selectedPlan)?.name} Plan</span>
                   <span className="text-sm font-semibold text-slate-200 font-mono">${PLANS.find(p => p.id === selectedPlan)?.price}.00/mo</span>
@@ -271,10 +267,10 @@ export default function OnboardingPage({ onBack }: { onBack: () => void }) {
           {/* Step: Complete */}
           {step === 'complete' && (
             <div className="p-10 text-center">
-              <div className="w-20 h-20 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center mx-auto mb-8">
+              <div className="w-20 h-20 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center mx-auto mb-8 inner-glow-emerald">
                 <Check className="w-10 h-10 text-emerald-400" />
               </div>
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] font-semibold uppercase tracking-wider mb-4">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] font-semibold uppercase tracking-wider mb-4">
                 <Sparkles className="w-3 h-3" /> Account Ready
               </div>
               <h2 className="text-2xl font-bold text-slate-100 mb-2">Welcome to SwarmVoice</h2>

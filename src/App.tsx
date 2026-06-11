@@ -12,7 +12,7 @@ import BillingSubscriptions from './views/BillingSubscriptions';
 import LandingPage from './pages/LandingPage';
 import OnboardingPage from './pages/OnboardingPage';
 import AuthGuard from './components/AuthGuard';
-import { Radio, Loader as Loader2 } from 'lucide-react';
+import { Loader as Loader2, Building2 } from 'lucide-react';
 
 type PublicPage = 'landing' | 'onboarding' | 'signin';
 
@@ -31,20 +31,22 @@ function DashboardContent() {
   return (
     <div className="flex h-screen bg-slate-950">
       <Sidebar />
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        <header className="flex items-center justify-between px-6 py-3 border-b border-slate-700/40 bg-slate-900/70 shrink-0">
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden dashboard-grid-bg">
+        <header className="flex items-center justify-between px-6 py-3 border-b border-orange-500/10 bg-slate-900/80 backdrop-blur-md shrink-0 relative z-10">
           <div className="flex items-center gap-3">
-            <Radio className="w-4 h-4 text-emerald-400" />
-            <span className="text-sm font-medium text-slate-300">{viewTitle[activeView]}</span>
+            <div className="w-1.5 h-5 rounded-full bg-gradient-to-b from-orange-400 to-emerald-400" />
+            <span className="text-sm font-semibold text-slate-200 tracking-wide">{viewTitle[activeView]}</span>
           </div>
           <div className="flex items-center gap-3 text-xs text-slate-500">
-            <span>Org: {auth.currentOrg?.name}</span>
-            <span className="w-px h-4 bg-slate-700" />
-            <span className="capitalize">{auth.currentOrg?.tier}</span>
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-white/[0.03] border border-white/[0.06]">
+              <Building2 className="w-3 h-3 text-orange-400" />
+              <span className="text-slate-400">{auth.currentOrg?.name}</span>
+            </div>
+            <span className="px-2 py-1 rounded-md bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 capitalize font-medium">{auth.currentOrg?.tier}</span>
           </div>
         </header>
 
-        <main className="flex-1 overflow-hidden">
+        <main className="flex-1 overflow-hidden relative">
           {activeView === 'console' && <AgentConsole />}
           {activeView === 'developer' && <DeveloperPortal />}
           {activeView === 'analytics' && <AnalyticsTelemetry />}
